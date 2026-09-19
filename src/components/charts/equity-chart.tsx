@@ -32,7 +32,7 @@ import {
 const INVESTED_COLOR = seriesColor(0);
 const EQUITY_COLOR = seriesColor(1);
 
-const MAX_TICKS = 8;
+const MIN_TICK_GAP = 36;
 
 type Point = {
   reference: string;
@@ -55,8 +55,6 @@ export function EquityChart({ months }: { months: EquityPoint[] }) {
     [months],
   );
 
-  const interval = Math.max(0, Math.ceil(data.length / MAX_TICKS) - 1);
-
   return (
     <div className="flex flex-col gap-3">
       <ChartLegend />
@@ -70,12 +68,12 @@ export function EquityChart({ months }: { months: EquityPoint[] }) {
 
           <XAxis
             dataKey="reference"
-            interval={interval}
+            interval="preserveStartEnd"
+            minTickGap={MIN_TICK_GAP}
             tickLine={false}
             axisLine={AXIS_LINE}
             tick={AXIS_TICK}
             tickFormatter={formatMonthReference}
-            minTickGap={8}
           />
 
           <YAxis
