@@ -155,6 +155,8 @@ src/
 │   └── layout.tsx
 ├── components/
 │   ├── auth/                   # formulário de login
+│   ├── charts/                 # gráficos e tokens de série
+│   ├── summary/                # blocos da aba Resumo
 │   ├── layout/                 # cabeçalho, navegação e sair
 │   ├── theme/                  # provider e alternador de tema
 │   └── ui/                     # primitivos (button, card, table, select, ...)
@@ -162,9 +164,52 @@ src/
     ├── api/                    # tipos da API, cliente do browser e do servidor
     ├── auth/                   # cookies de sessão e mensagens de erro
     ├── format.ts               # moeda, percentual e datas em pt-BR
+    ├── portfolio/              # agrupamento da carteira para a tela
     ├── routes.ts               # abas do painel
     └── utils.ts
 ```
+
+## Aba Resumo
+
+Uma requisição por pergunta, disparadas em paralelo num Server Component:
+`/portfolio/overview` para os números de topo, `/portfolio/allocation` para a
+composição e as tabelas, `/portfolio/equity/history` para a série mensal.
+
+### O gráfico mostra duas linhas, não uma pilha
+
+O ganho de capital é a **distância entre patrimônio e valor aplicado**, e não uma
+faixa empilhada. Empilhar só funcionaria enquanto o ganho fosse positivo: num mês
+de prejuízo a faixa desceria abaixo do eixo e a pilha deixaria de somar o
+patrimônio. Com duas linhas, o prejuízo aparece como a linha do patrimônio
+cruzando para baixo da área do aplicado — que é exatamente o que se quer ver.
+
+### De onde sai cada coluna da tabela
+
+Todas vêm de `/portfolio/allocation`, **menos a "% ideal"**. A API guarda meta por
+classe (`wallet_asset_class`) e por setor dentro da classe (`wallet_sectors`), e
+não tem meta por ticker — é por isso que o próprio `/portfolio/rebalance` divide a
+fatia do setor proporcionalmente ao valor de cada papel.
+
+Então a coluna mostra a meta do **setor** daquele ativo, já convertida em fatia da
+carteira (`wallet_ideal_percentage`), e o cabeçalho diz "do setor". Dois ativos do
+mesmo setor mostram a mesma meta, e isso é o correto: é o alvo que existe.
+
+### A rosca sempre vem acompanhada da tabela
+
+Três cores do modo claro ficam abaixo de 3:1 contra a superfície, então a rosca
+nunca carrega a informação sozinha: a tabela ao lado repete cada fatia com
+percentual real, ideal e saldo. Acima de seis classes a cauda vira "Outros" —
+passar disso põe na tela cores que ninguém distingue.
+
+### Nomes de classe
+
+`/portfolio/allocation` devolve `asset_type` como **nome** do enum (`STOCKS`),
+enquanto o parâmetro de query e o `asset_type` de `/portfolio/equity/history`
+usam o **valor** (`AÇÃO`). A tradução entre os dois, e para o rótulo exibido
+("Ações"), fica em `ASSET_TYPES` (`src/lib/api/types.ts`) — um lugar só, para a
+inconsistência não vazar pelos componentes.
+
+---
 
 ## Convenções
 
@@ -184,7 +229,7 @@ src/
 |---|---|
 | Setup, temas, camada de API e BFF | Pronto |
 | Tela de login, segundo fator e proteção de rotas | Pronto |
-| Aba Resumo | A fazer |
+| Aba Resumo | Pronto |
 | Aba Proventos | A fazer |
 | Aba Gráficos | A fazer |
 | Aba IRPF | A fazer |

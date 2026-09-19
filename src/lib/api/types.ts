@@ -6,16 +6,32 @@ export type ApiEnvelope<T> = {
 };
 
 export const ASSET_TYPES = [
-  "AÇÃO",
-  "FII",
-  "RENDA FIXA",
-  "DÍVIDA COPERATIVA",
-  "ALTERNATIVOS",
-  "INTERNACIONAL",
-  "FUNDOS MULTIMERCADO",
+  { name: "STOCKS", value: "AÇÃO", label: "Ações" },
+  { name: "FII", value: "FII", label: "Fundos imobiliários" },
+  { name: "INCOME_FIXED", value: "RENDA FIXA", label: "Renda fixa" },
+  { name: "COOPERATIVE_DEBT", value: "DÍVIDA COPERATIVA", label: "Dívida cooperativa" },
+  { name: "ALTERNATIVES", value: "ALTERNATIVOS", label: "Alternativos" },
+  { name: "INTERNATIONAL", value: "INTERNACIONAL", label: "Internacional" },
+  {
+    name: "MULTIMARKET_FUNDS",
+    value: "FUNDOS MULTIMERCADO",
+    label: "Fundos multimercado",
+  },
 ] as const;
 
-export type AssetType = (typeof ASSET_TYPES)[number];
+export type AssetTypeName = (typeof ASSET_TYPES)[number]["name"];
+
+export type AssetType = (typeof ASSET_TYPES)[number]["value"];
+
+const BY_NAME = new Map(ASSET_TYPES.map((item) => [item.name as string, item]));
+
+export function assetTypeQueryValue(name: string): AssetType | undefined {
+  return BY_NAME.get(name)?.value;
+}
+
+export function assetTypeLabel(name: string, fallback?: string | null): string {
+  return BY_NAME.get(name)?.label ?? fallback ?? name;
+}
 
 export const PORTFOLIO_PERIODS = ["ALL", "12M", "2Y", "5Y", "10Y"] as const;
 
@@ -195,3 +211,22 @@ export type WalletList = { wallet: WalletSummary[] };
 export type SigninMfaChallenge = { mfa_signin_token: string };
 
 export type AuthTokens = { access_token: string; refresh_token: string };
+
+export type EquityPoint = {
+  reference: string;
+  year: number;
+  month: number;
+  total_equity: ApiDecimal;
+  invested_amount: ApiDecimal;
+  capital_gain: ApiDecimal;
+  realized_gain: ApiDecimal;
+  earnings: ApiDecimal;
+};
+
+export type PortfolioEquityHistory = {
+  period: PortfolioPeriod;
+  asset_type: AssetType | null;
+  start: string;
+  end: string;
+  months: EquityPoint[];
+};
