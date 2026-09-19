@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { EarningsChart } from "@/components/charts/earnings-chart";
-import { EarningsFilters } from "@/components/earnings/earnings-filters";
+import { FilterRow } from "@/components/filters/filter-row";
 import { EarningsTable } from "@/components/earnings/earnings-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,7 +79,7 @@ export function EarningsView({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <EarningsFilters
+          <FilterRow
             fields={[
               {
                 id: "status",

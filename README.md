@@ -157,6 +157,8 @@ src/
 │   ├── auth/                   # formulário de login
 │   ├── charts/                 # gráficos e tokens de série
 │   ├── earnings/               # filtros e tabela de proventos
+│   ├── filters/                # linha de seletores reaproveitada
+│   ├── graficos/               # cartões da aba Gráficos
 │   ├── summary/                # blocos da aba Resumo
 │   ├── layout/                 # cabeçalho, navegação e sair
 │   ├── theme/                  # provider e alternador de tema
@@ -250,6 +252,52 @@ ganho pode ser negativo e a pilha deixaria de fechar.
 O alternador troca a granularidade em vez de recortar um intervalo: com anos, a
 mesma série responde "quanto entrou por ano" sem precisar de outro endpoint.
 
+## Aba Gráficos
+
+Quatro leituras, com filtros que vivem em camadas diferentes porque as fontes de
+dados são diferentes.
+
+### O gráfico de patrimônio filtra no servidor
+
+`period` e `asset_type` mudam a **série inteira**: cada ponto é a carteira
+reconstruída naquele mês, e recortar por classe muda até onde a série começa.
+Nada disso dá para derivar no cliente a partir da série cheia, então os dois
+filtros viram `queryKey` do TanStack Query e refazem a busca. A série que o
+servidor já renderizou entra como `initialData`, para o primeiro desenho não
+piscar.
+
+É o oposto da aba Proventos, onde tudo é filtrado na memória: lá os pagamentos
+já vieram todos e filtrar é escolher quais mostrar.
+
+### Setores e ativos dividem um filtro só
+
+Os dois saem do mesmo `/portfolio/allocation`, que traz a carteira inteira, então
+o recorte por classe é feito no cliente e o mesmo estado alimenta os dois
+gráficos — como pedido.
+
+O denominador acompanha o recorte: sem filtro, o percentual é **sobre a
+carteira** (`wallet_real_percentage`); com uma classe escolhida, é **sobre a
+classe** (`real_percentage`), e os valores passam a somar 100%. O subtítulo de
+cada gráfico diz qual das duas leituras está na tela, senão 47% de Logística
+seria confundido com 47% do patrimônio.
+
+### Setor repetido leva o nome da classe
+
+`OUTROS` existe em mais de uma classe, e `wallet_sectors` é único por
+`(carteira, classe, setor)` justamente por isso. Sem desambiguar, o gráfico
+mostrava duas barras "Outros" sem como saber qual era qual — agora só as
+etiquetas repetidas ganham o sufixo da classe, e as únicas seguem limpas.
+
+### Barra em vez de rosca
+
+Aqui a pergunta é de magnitude — quem é maior que quem —, não de identidade, então
+as barras usam **um tom só** e a ordem carrega a informação. Treze setores em
+treze cores seria ilegível; a rosca colorida fica no Resumo, onde são poucas
+classes e a leitura é de composição.
+
+A largura da faixa de rótulos acompanha a tela: fixa em 156px ela comeria 40% de
+um celular e espremeria as barras.
+
 ## Convenções
 
 - Código em `src/` não leva comentário nem docstring: o porquê de uma decisão
@@ -270,7 +318,7 @@ mesma série responde "quanto entrou por ano" sem precisar de outro endpoint.
 | Tela de login, segundo fator e proteção de rotas | Pronto |
 | Aba Resumo | Pronto |
 | Aba Proventos | Pronto |
-| Aba Gráficos | A fazer |
+| Aba Gráficos | Pronto |
 | Aba IRPF | A fazer |
 
 A recuperação de senha (`/auth/recovery/*`) existe na API e ainda não tem tela.
