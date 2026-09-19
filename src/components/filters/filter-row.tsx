@@ -10,7 +10,7 @@ import {
 
 export type FilterOption = { value: string; label: string };
 
-export function EarningsFilters({
+export function FilterRow({
   fields,
 }: {
   fields: {

@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 
-import { PendingTab } from "@/components/layout/pending-tab";
+import { AllocationSharesCard } from "@/components/graficos/allocation-shares-card";
+import { EquityHistoryCard } from "@/components/graficos/equity-history-card";
+import { getAllocation, getEquityHistory } from "@/lib/api/portfolio";
 
 export const metadata: Metadata = { title: "Gráficos" };
 
-export default function GraficosPage() {
+export default async function GraficosPage() {
+  const [allocation, history] = await Promise.all([
+    getAllocation(),
+    getEquityHistory(),
+  ]);
+
   return (
-    <PendingTab
-      title="Gráficos"
-      items={[
-        "Patrimônio separando valor aplicado de ganho de capital",
-        "Porcentagem real por setor",
-        "Porcentagem real por ativo",
-      ]}
-    />
+    <div className="flex flex-col gap-6">
+      <EquityHistoryCard allocation={allocation} initialHistory={history} />
+      <AllocationSharesCard allocation={allocation} />
+    </div>
   );
 }
