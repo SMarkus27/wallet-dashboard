@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 
-import { PendingTab } from "@/components/layout/pending-tab";
+import { IrpfView } from "@/components/irpf/irpf-view";
+import { getTaxPeriods } from "@/lib/api/taxes";
 
 export const metadata: Metadata = { title: "IRPF" };
 
-export default function IrpfPage() {
-  return (
-    <PendingTab
-      title="IRPF"
-      items={["Apuração mensal por classe de ativo", "DARF do mês e situação"]}
-    />
-  );
+export default async function IrpfPage() {
+  const taxes = await getTaxPeriods();
+
+  return <IrpfView taxes={taxes} />;
 }
