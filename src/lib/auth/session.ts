@@ -1,16 +1,19 @@
 import { cookies } from "next/headers";
 
-export const ACCESS_TOKEN_COOKIE = "wd_access_token";
-export const REFRESH_TOKEN_COOKIE = "wd_refresh_token";
+import {
+  ACCESS_TOKEN_COOKIE,
+  ACCESS_TOKEN_MAX_AGE,
+  REFRESH_TOKEN_COOKIE,
+  REFRESH_TOKEN_MAX_AGE,
+} from "@/lib/auth/cookies";
+
+export { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE };
 
 export const UPSTREAM_ACCESS_TOKEN_COOKIE =
   process.env.WALLET_ACCESS_TOKEN_COOKIE_NAME ?? "access_token";
 
 export const UPSTREAM_REFRESH_TOKEN_COOKIE =
   process.env.WALLET_REFRESH_TOKEN_COOKIE_NAME ?? "refresh_token";
-
-const ACCESS_TOKEN_MAX_AGE = 60 * 30;
-const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 30;
 
 export type SessionTokens = {
   accessToken?: string;

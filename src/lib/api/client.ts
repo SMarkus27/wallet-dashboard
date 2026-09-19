@@ -29,6 +29,32 @@ export function clientSearch(params: ClientQueryParams = {}) {
   return serialized ? `?${serialized}` : "";
 }
 
+export function detailOf(payload: unknown): string {
+  if (!payload || typeof payload !== "object") return "";
+
+  const detail = (payload as { detail?: unknown }).detail;
+
+  if (typeof detail === "string") return detail;
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) =>
+        item && typeof item === "object" && "msg" in item
+          ? String((item as { msg: unknown }).msg)
+          : "",
+      )
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  if (detail && typeof detail === "object" && "message" in detail) {
+    return String((detail as { message: unknown }).message);
+  }
+
+  const message = (payload as { message?: unknown }).message;
+  return typeof message === "string" ? message : "";
+}
+
 async function request<T>(
   path: string,
   init: RequestInit & { params?: ClientQueryParams } = {},
@@ -44,16 +70,26 @@ async function request<T>(
   });
 
   const raw = await response.text();
-  const payload = raw ? (JSON.parse(raw) as ApiEnvelope<T> & { detail?: string }) : null;
+  const payload = parse(raw);
 
   if (!response.ok) {
     throw new ApiError(
       response.status,
-      payload?.detail ?? payload?.message ?? `Falha na requisição (${response.status}).`,
+      detailOf(payload) || `Falha na requisição (${response.status}).`,
     );
   }
 
-  return (payload?.data ?? null) as T;
+  return ((payload as ApiEnvelope<T> | null)?.data ?? null) as T;
+}
+
+function parse(raw: string): unknown {
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 export const api = {

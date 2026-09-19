@@ -75,6 +75,57 @@ browser ──/api/wallet/**──► Next.js Route Handler ──cookie──�
 Server Components não passam pelo proxy: usam `apiGet` (`src/lib/api/server.ts`),
 que fala direto com a API a partir do servidor, lendo os mesmos cookies.
 
+## Autenticação
+
+O login tem duas etapas, porque a API pode exigir segundo fator:
+
+```
+POST /investor/auth/signin
+  ├─ 202 { mfa_signin_token }  -> pede o código do autenticador
+  │     └─ POST /investor/auth/signin/mfa  -> sessão criada
+  └─ 200                        -> sessão criada direto
+```
+
+Em nenhum dos dois caminhos o token chega ao browser. O proxy reconhece a
+resposta que carrega `access_token` e `refresh_token`, converte os dois em
+cookies httpOnly do próprio dashboard e **troca o corpo** por
+`{ "authenticated": true }` antes de responder. É por isso que o formulário de
+login não guarda nada: ele só olha o status e o `mfa_signin_token`.
+
+### Proteção de rotas
+
+`src/proxy.ts` — no Next 16 o arquivo `middleware.ts` foi renomeado para
+`proxy.ts`, e o nome não tem relação com o proxy BFF — redireciona quem não tem
+cookie de sessão para `/login`, guardando o destino em `?next=`. Quem já tem
+sessão e abre `/login` vai para `/resumo`.
+
+O valor de `next` é validado contra a lista de rotas do painel antes de virar
+destino (`resolveRedirect`). Um `next` apontando para fora vira `/resumo`, para
+que a tela de login não possa ser usada como trampolim para outro domínio.
+
+O arquivo de rotas (`src/lib/routes.ts`) é a fonte única das abas: alimenta a
+navegação, o destino padrão e essa validação de redirecionamento.
+
+### Mensagens de erro
+
+A API responde em inglês e distingue os casos pelo status. A tradução fica em
+`src/lib/auth/messages.ts`, num só lugar:
+
+| Situação | Status da API | Mensagem exibida |
+|---|---|---|
+| E-mail ou senha errados | 401 | E-mail ou senha incorretos |
+| Conta desativada | 403 | Conta desativada, fale com o suporte |
+| E-mail mal formado | 422 | Informe um e-mail válido |
+| Código do autenticador errado | 400 | Código inválido |
+| Confirmação expirada | 400 | A confirmação expirou, entre novamente |
+
+Os dois últimos compartilham o status 400 e só se distinguem pelo texto que a
+API devolve, então `challengeExpired` procura por `login token` na mensagem.
+Quando é a confirmação que expirou, o formulário volta para a etapa de senha —
+o `mfa_signin_token` vale cinco minutos e não adianta insistir no código.
+
+---
+
 ## Temas claro e escuro
 
 Os tokens vivem em `src/app/globals.css`, declarados em `:root` e redefinidos em
@@ -95,17 +146,23 @@ direto ou legenda, e todo gráfico tem a tabela equivalente na mesma tela.
 
 ```
 src/
+├── proxy.ts                    # proteção de rotas (era middleware.ts)
 ├── app/
+│   ├── (auth)/login/           # tela de login e segundo fator
+│   ├── (dashboard)/            # layout do painel e as quatro abas
 │   ├── api/wallet/[...path]/   # proxy BFF para a API
 │   ├── globals.css             # design tokens e tema
 │   └── layout.tsx
 ├── components/
+│   ├── auth/                   # formulário de login
+│   ├── layout/                 # cabeçalho, navegação e sair
 │   ├── theme/                  # provider e alternador de tema
 │   └── ui/                     # primitivos (button, card, table, select, ...)
 └── lib/
     ├── api/                    # tipos da API, cliente do browser e do servidor
-    ├── auth/                   # cookies de sessão
+    ├── auth/                   # cookies de sessão e mensagens de erro
     ├── format.ts               # moeda, percentual e datas em pt-BR
+    ├── routes.ts               # abas do painel
     └── utils.ts
 ```
 
@@ -117,14 +174,19 @@ src/
   convertidos por `toNumber` antes de qualquer conta — nunca somados como texto.
 - Rotas são tipadas (`typedRoutes`), então um link para rota inexistente quebra
   o build em vez de só dar 404 em produção.
+- `agentRules: false` no `next.config.ts`: o Next 16 escreve um `AGENTS.md` e um
+  `CLAUDE.md` na raiz ao subir o dev server, e as convenções deste repositório
+  já moram no `CLAUDE.local.md`.
 
 ## Estado da implementação
 
 | Etapa | Situação |
 |---|---|
 | Setup, temas, camada de API e BFF | Pronto |
-| Tela de login | A fazer |
+| Tela de login, segundo fator e proteção de rotas | Pronto |
 | Aba Resumo | A fazer |
 | Aba Proventos | A fazer |
 | Aba Gráficos | A fazer |
 | Aba IRPF | A fazer |
+
+A recuperação de senha (`/auth/recovery/*`) existe na API e ainda não tem tela.
