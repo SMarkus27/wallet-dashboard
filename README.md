@@ -159,6 +159,7 @@ src/
 │   ├── earnings/               # filtros e tabela de proventos
 │   ├── filters/                # linha de seletores reaproveitada
 │   ├── graficos/               # cartões da aba Gráficos
+│   ├── irpf/                   # apuração, detalhe do mês e ação da DARF
 │   ├── summary/                # blocos da aba Resumo
 │   ├── layout/                 # cabeçalho, navegação e sair
 │   ├── theme/                  # provider e alternador de tema
@@ -298,6 +299,49 @@ classes e a leitura é de composição.
 A largura da faixa de rótulos acompanha a tela: fixa em 156px ela comeria 40% de
 um celular e espremeria as barras.
 
+## Aba IRPF
+
+A lista de períodos vem inteira de `/taxes/periods` — são poucos registros, um
+por mês e classe — e os filtros de ano e classe são resolvidos na memória. O
+detalhe de um mês (`/taxes/periods/{ano}/{mes}`) só é buscado quando a linha é
+aberta.
+
+### O mês é a linha; a classe é o detalhe
+
+A API grava um período por **classe**, mas a DARF é do **mês**: o código 6015
+consolida ações e FIIs. Por isso a tabela lista meses, somando as classes, e a
+apuração por classe aparece ao abrir a linha — junto das operações que a
+formaram e do prejuízo que sobra para compensar depois.
+
+O prejuízo não consolida: ele é compensado dentro da própria classe, e é por isso
+que o saldo a compensar aparece separado por classe no detalhe.
+
+### A situação é por classe, o total pendente também
+
+Marcar como paga é uma ação por classe, então um mês pode ter a DARF de ações
+quitada e a de FII em aberto. O indicador de pendente soma **só as classes em
+aberto** — somar o mês inteiro faria o total parar de cair ao quitar a primeira,
+e o número deixaria de responder "quanto ainda devo".
+
+### Três jeitos de a DARF ser zero
+
+| Situação exibida | O que aconteceu |
+|---|---|
+| Isento | Vendas de ações abaixo do limite mensal de R$ 20.000 |
+| Sem imposto | Não houve resultado a tributar no mês |
+| Não recolhida | Há imposto, mas a DARF ficou abaixo de R$ 10 |
+
+As três zeram a coluna da DARF e dizem coisas diferentes, então a linha mostra
+qual delas é. A de menos de R$ 10 ainda exibe o valor apurado, com a nota de que
+não é recolhida — some-o à DARF de um mês seguinte, é o que a Receita espera.
+
+### O recálculo ficou de fora
+
+`POST /taxes/periods/{ano}/{mes}/recalculate` reapura o mês **e todos os
+seguintes**, porque a compensação de prejuízo encadeia os períodos. É uma ação
+destrutiva o suficiente para não morar atrás de um botão de tabela sem uma
+confirmação pensada.
+
 ## Convenções
 
 - Código em `src/` não leva comentário nem docstring: o porquê de uma decisão
@@ -319,7 +363,7 @@ um celular e espremeria as barras.
 | Aba Resumo | Pronto |
 | Aba Proventos | Pronto |
 | Aba Gráficos | Pronto |
-| Aba IRPF | A fazer |
+| Aba IRPF | Pronto |
 
 A recuperação de senha (`/auth/recovery/*`) existe na API e ainda não tem tela.
 Os proventos futuros dependem do catálogo `announced_earnings`, alimentado pelas
