@@ -1,5 +1,7 @@
 import "server-only";
 
+import { redirect } from "next/navigation";
+
 import type { ApiEnvelope } from "@/lib/api/types";
 import { UpstreamError, upstreamFetch } from "@/lib/api/upstream";
 import { readSessionTokens } from "@/lib/auth/session";
@@ -28,6 +30,8 @@ export async function apiGet<T>(path: string, params?: QueryParams): Promise<T> 
     search: toSearch(params),
     tokens,
   });
+
+  if (response.status === 401) redirect("/login");
 
   const raw = await response.text();
 
