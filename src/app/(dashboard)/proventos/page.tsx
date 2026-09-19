@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
 
-import { PendingTab } from "@/components/layout/pending-tab";
+import { EarningsView } from "@/components/earnings/earnings-view";
+import { getEarnings, getScheduledEarnings } from "@/lib/api/portfolio";
 
 export const metadata: Metadata = { title: "Proventos" };
 
-export default function ProventosPage() {
-  return (
-    <PendingTab
-      title="Proventos"
-      items={[
-        "Histórico mensal com filtros de situação, ticker e tipo de ativo",
-        "Evolução dos proventos recebidos por mês e por ano",
-      ]}
-    />
-  );
+export default async function ProventosPage() {
+  const [received, scheduled] = await Promise.all([
+    getEarnings(),
+    getScheduledEarnings(),
+  ]);
+
+  return <EarningsView received={received} scheduled={scheduled} />;
 }

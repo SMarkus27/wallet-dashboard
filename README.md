@@ -156,6 +156,7 @@ src/
 ├── components/
 │   ├── auth/                   # formulário de login
 │   ├── charts/                 # gráficos e tokens de série
+│   ├── earnings/               # filtros e tabela de proventos
 │   ├── summary/                # blocos da aba Resumo
 │   ├── layout/                 # cabeçalho, navegação e sair
 │   ├── theme/                  # provider e alternador de tema
@@ -164,7 +165,7 @@ src/
     ├── api/                    # tipos da API, cliente do browser e do servidor
     ├── auth/                   # cookies de sessão e mensagens de erro
     ├── format.ts               # moeda, percentual e datas em pt-BR
-    ├── portfolio/              # agrupamento da carteira para a tela
+    ├── portfolio/              # agrupamento da carteira e dos proventos
     ├── routes.ts               # abas do painel
     └── utils.ts
 ```
@@ -211,6 +212,44 @@ inconsistência não vazar pelos componentes.
 
 ---
 
+## Aba Proventos
+
+Duas requisições em paralelo: `/portfolio/earnings` traz o que já foi pago e
+`/portfolio/earnings/scheduled` o que está anunciado. A tela junta as duas listas
+numa só e filtra **no cliente** — os dados de uma carteira cabem de sobra na
+memória, e filtrar sem ida ao servidor deixa o ajuste instantâneo.
+
+### O que cada filtro alcança
+
+| Filtro | Tabela | Gráfico |
+|---|---|---|
+| Ticker | sim | sim |
+| Tipo de ativo | sim | sim |
+| Situação (recebidos / futuros / ambos) | sim | **não** |
+
+Ticker e tipo de ativo são recortes da carteira e valem para tudo que está na
+tela. A situação não alcança o gráfico porque ele é, por definição, de proventos
+**recebidos**: filtrar por "futuros" o deixaria vazio, o que seria um resultado
+sem sentido em vez de um filtro. O texto do cartão de filtros diz isso, e o
+título do gráfico repete.
+
+### Por que a tabela agrupa por mês num cabeçalho só
+
+O pedido é um histórico **mensal**, então o mês precisa aparecer como grupo, não
+como coluna repetida em cada linha. A primeira versão repetia o cabeçalho da
+tabela a cada mês — com trinta meses em tela, trinta faixas de "Data · Ticker ·
+Tipo…". Agora o cabeçalho é único e o mês entra como uma linha que atravessa as
+colunas, carregando o total do período.
+
+### O gráfico agrupa por mês ou por ano
+
+Dividendos e JCP empilhados, no valor líquido. As duas séries somam o total do
+período, então empilhar é honesto — diferente do gráfico de patrimônio, onde o
+ganho pode ser negativo e a pilha deixaria de fechar.
+
+O alternador troca a granularidade em vez de recortar um intervalo: com anos, a
+mesma série responde "quanto entrou por ano" sem precisar de outro endpoint.
+
 ## Convenções
 
 - Código em `src/` não leva comentário nem docstring: o porquê de uma decisão
@@ -230,8 +269,10 @@ inconsistência não vazar pelos componentes.
 | Setup, temas, camada de API e BFF | Pronto |
 | Tela de login, segundo fator e proteção de rotas | Pronto |
 | Aba Resumo | Pronto |
-| Aba Proventos | A fazer |
+| Aba Proventos | Pronto |
 | Aba Gráficos | A fazer |
 | Aba IRPF | A fazer |
 
 A recuperação de senha (`/auth/recovery/*`) existe na API e ainda não tem tela.
+Os proventos futuros dependem do catálogo `announced_earnings`, alimentado pelas
+rotas internas da API — a aba mostra a coluna vazia enquanto ele estiver vazio.

@@ -25,12 +25,18 @@ export type AssetType = (typeof ASSET_TYPES)[number]["value"];
 
 const BY_NAME = new Map(ASSET_TYPES.map((item) => [item.name as string, item]));
 
-export function assetTypeQueryValue(name: string): AssetType | undefined {
-  return BY_NAME.get(name)?.value;
+const BY_VALUE = new Map(ASSET_TYPES.map((item) => [item.value as string, item]));
+
+export function assetTypeQueryValue(key: string): AssetType | undefined {
+  return entryOf(key)?.value;
 }
 
-export function assetTypeLabel(name: string, fallback?: string | null): string {
-  return BY_NAME.get(name)?.label ?? fallback ?? name;
+export function assetTypeLabel(key: string, fallback?: string | null): string {
+  return entryOf(key)?.label ?? fallback ?? key;
+}
+
+function entryOf(key: string) {
+  return BY_NAME.get(key) ?? BY_VALUE.get(key);
 }
 
 export const PORTFOLIO_PERIODS = ["ALL", "12M", "2Y", "5Y", "10Y"] as const;
@@ -130,13 +136,72 @@ export type MonthlyEarning = {
   total: ApiDecimal;
 };
 
+export type EarningKind = "DIVIDEND" | "JCP";
+
+export type EarningAsset = {
+  ticker: string;
+  name: string | null;
+  asset_type: AssetType;
+  sector: string | null;
+  sector_label: string | null;
+  dividends: ApiDecimal;
+  interest_on_equity: ApiDecimal;
+  total: ApiDecimal;
+};
+
+export type EarningPayment = {
+  external_id_str: string;
+  reference: string;
+  ticker: string;
+  name: string | null;
+  asset_type: AssetType;
+  sector: string | null;
+  sector_label: string | null;
+  type: EarningKind;
+  quantity: number;
+  price: ApiDecimal;
+  gross: ApiDecimal;
+  fees: ApiDecimal;
+  net: ApiDecimal;
+  traded_at: string;
+};
+
 export type PortfolioEarnings = {
   period: PortfolioPeriod;
+  asset_type: AssetType | null;
+  ticker: string | null;
   start: string;
   end: string;
   total: ApiDecimal;
   last_12_months: ApiDecimal;
   months: MonthlyEarning[];
+  assets: EarningAsset[];
+  payments: EarningPayment[];
+};
+
+export type ScheduledEarning = {
+  external_id_str: string;
+  reference: string;
+  ticker: string;
+  name: string | null;
+  asset_type: AssetType;
+  sector: string | null;
+  sector_label: string | null;
+  type: EarningKind;
+  quantity: number;
+  price: ApiDecimal;
+  amount: ApiDecimal;
+  ex_date: string;
+  payment_date: string;
+};
+
+export type PortfolioScheduledEarnings = {
+  reference: string;
+  asset_type: AssetType | null;
+  ticker: string | null;
+  total: ApiDecimal;
+  months: MonthlyEarning[];
+  payments: ScheduledEarning[];
 };
 
 export type TaxPeriod = {
