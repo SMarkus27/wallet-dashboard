@@ -19,9 +19,14 @@ const quantityFormatter = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 0,
 });
 
-const monthFormatter = new Intl.DateTimeFormat("pt-BR", {
+const shortMonthFormatter = new Intl.DateTimeFormat("pt-BR", {
   month: "short",
-  year: "2-digit",
+  timeZone: "UTC",
+});
+
+const longMonthFormatter = new Intl.DateTimeFormat("pt-BR", {
+  month: "long",
+  year: "numeric",
   timeZone: "UTC",
 });
 
@@ -60,10 +65,23 @@ export function formatQuantity(value: string | number | null | undefined) {
   return quantityFormatter.format(toNumber(value));
 }
 
-export function formatMonthReference(reference: string) {
+function referenceToDate(reference: string) {
   const [year, month] = reference.split("-");
-  if (!year || !month) return reference;
-  return monthFormatter.format(new Date(Number(year), Number(month) - 1, 1));
+  if (!year || !month) return null;
+  return new Date(Date.UTC(Number(year), Number(month) - 1, 1));
+}
+
+export function formatMonthReference(reference: string) {
+  const date = referenceToDate(reference);
+  if (!date) return reference;
+
+  const month = shortMonthFormatter.format(date).replace(".", "");
+  return `${month}/${String(date.getUTCFullYear()).slice(2)}`;
+}
+
+export function formatMonthLong(reference: string) {
+  const date = referenceToDate(reference);
+  return date ? longMonthFormatter.format(date) : reference;
 }
 
 export function formatIsoDate(value: string) {
