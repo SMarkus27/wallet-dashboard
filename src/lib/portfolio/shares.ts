@@ -1,6 +1,6 @@
 import type { PortfolioAllocation } from "@/lib/api/types";
 import { ASSET_TYPES, assetTypeLabel } from "@/lib/api/types";
-import type { ShareDatum } from "@/components/charts/share-bar-chart";
+import type { ShareDatum } from "@/components/charts/share-donut";
 import { toNumber } from "@/lib/format";
 
 export const ALL_TYPES = "ALL";

@@ -247,8 +247,13 @@ mesmo setor mostram a mesma meta, e isso é o correto: é o alvo que existe.
 
 Três cores do modo claro ficam abaixo de 3:1 contra a superfície, então a rosca
 nunca carrega a informação sozinha: a tabela ao lado repete cada fatia com
-percentual real, ideal e saldo. Acima de seis classes a cauda vira "Outros" —
-passar disso põe na tela cores que ninguém distingue.
+percentual real, ideal e saldo. Acima de seis fatias a cauda do desenho vira
+"Outros" — passar disso põe na tela cores que ninguém distingue —, mas a tabela
+continua listando todas.
+
+O componente (`ShareDonut`) é o mesmo que a aba Gráficos usa para setores e
+ativos: a pergunta é a mesma, composição percentual, e duas formas diferentes
+para a mesma pergunta só custariam ao leitor.
 
 ### Nomes de classe
 
@@ -334,15 +339,20 @@ seria confundido com 47% do patrimônio.
 mostrava duas barras "Outros" sem como saber qual era qual — agora só as
 etiquetas repetidas ganham o sufixo da classe, e as únicas seguem limpas.
 
-### Barra em vez de rosca
+### Rosca, com a tabela ao lado
 
-Aqui a pergunta é de magnitude — quem é maior que quem —, não de identidade, então
-as barras usam **um tom só** e a ordem carrega a informação. Treze setores em
-treze cores seria ilegível; a rosca colorida fica no Resumo, onde são poucas
-classes e a leitura é de composição.
+São percentuais de uma composição, então a forma é a rosca — a mesma do Resumo, e
+por isso o componente é um só.
 
-A largura da faixa de rótulos acompanha a tela: fixa em 156px ela comeria 40% de
-um celular e espremeria as barras.
+A rosca sozinha não daria conta: acima de seis fatias as cores deixam de ser
+distinguíveis, e uma carteira com treze setores viraria confete. Quem resolve é o
+par: **a rosca dobra a cauda em "Outros (n)" e a tabela ao lado lista todas as
+fatias**, com percentual real, meta e saldo. Dobrar esconde a fatia no desenho,
+nunca o número.
+
+As linhas dobradas herdam a cor do arco "Outros", para o olho ligar a linha ao
+lugar onde ela está desenhada; um quadradinho cinza sem explicação pareceria
+falha de renderização.
 
 ## Aba IRPF
 

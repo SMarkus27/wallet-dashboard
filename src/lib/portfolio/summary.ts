@@ -1,3 +1,4 @@
+import type { ShareDatum } from "@/components/charts/share-donut";
 import type {
   AllocationSlice,
   AssetAllocation,
@@ -39,12 +40,12 @@ export function groupByAssetType(
     .sort((left, right) => right.marketValue - left.marketValue);
 }
 
-export function donutSlices(slices: AllocationSlice[]) {
+export function assetTypeShares(slices: AllocationSlice[]): ShareDatum[] {
   return slices.map((slice) => ({
     key: slice.name,
     label: assetTypeLabel(slice.name, slice.label),
     value: toNumber(slice.market_value),
-    realPercentage: toNumber(slice.real_percentage),
+    percentage: toNumber(slice.real_percentage),
     idealPercentage: toNumber(slice.ideal_percentage),
   }));
 }
