@@ -34,6 +34,8 @@ const EQUITY_COLOR = seriesColor(1);
 
 const MIN_TICK_GAP = 36;
 
+const MIN_POINTS = 2;
+
 type Point = {
   reference: string;
   invested: number;
@@ -54,6 +56,16 @@ export function EquityChart({ months }: { months: EquityPoint[] }) {
       })),
     [months],
   );
+
+  // Um mês só não é evolução: dois pontos soltos num gráfico de 280px não
+  // dizem nada além do que os números ao lado já dizem.
+  if (data.length < MIN_POINTS) {
+    return (
+      <p className="py-10 text-center text-sm text-muted-foreground">
+        A evolução aparece a partir do segundo mês de histórico.
+      </p>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">
