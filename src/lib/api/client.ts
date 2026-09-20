@@ -40,7 +40,7 @@ export function detailOf(payload: unknown): string {
     return detail
       .map((item) =>
         item && typeof item === "object" && "msg" in item
-          ? String((item as { msg: unknown }).msg)
+          ? withoutPydanticPrefix(String((item as { msg: unknown }).msg))
           : "",
       )
       .filter(Boolean)
@@ -53,6 +53,10 @@ export function detailOf(payload: unknown): string {
 
   const message = (payload as { message?: unknown }).message;
   return typeof message === "string" ? message : "";
+}
+
+function withoutPydanticPrefix(message: string) {
+  return message.replace(/^Value error,\s*/, "");
 }
 
 async function request<T>(

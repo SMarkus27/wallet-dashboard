@@ -43,6 +43,20 @@ export async function apiGet<T>(path: string, params?: QueryParams): Promise<T> 
   return payload.data;
 }
 
+export async function apiPostStatus(
+  path: string,
+  body: unknown,
+): Promise<number> {
+  const response = await upstreamFetch({
+    path,
+    method: "POST",
+    body: JSON.stringify(body),
+    contentType: "application/json",
+  });
+
+  return response.status;
+}
+
 function messageFrom(raw: string, status: number) {
   try {
     const payload = JSON.parse(raw) as { detail?: string; message?: string };

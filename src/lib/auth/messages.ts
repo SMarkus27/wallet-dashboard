@@ -9,7 +9,25 @@ export const AUTH_MESSAGES = {
     "A confirmação expirou. Entre com e-mail e senha novamente.",
   unavailable: "Não foi possível falar com o servidor. Tente novamente.",
   unexpected: "Algo deu errado. Tente novamente em instantes.",
+  recoverySent:
+    "Se houver uma conta com esse e-mail, enviamos um link para redefinir a senha. O link vale por uma hora.",
+  recoveryExpired:
+    "Este link de redefinição expirou ou já foi usado. Peça um novo para continuar.",
+  passwordMismatch: "As senhas não conferem.",
 } as const;
+
+export function recoveryMessage(status: number) {
+  if (status === 422) return AUTH_MESSAGES.invalidEmail;
+  return AUTH_MESSAGES.unexpected;
+}
+
+export function resetMessage(status: number, detail: string) {
+  if (status === 409) return AUTH_MESSAGES.recoveryExpired;
+  if (status === 422 && detail) return detail;
+  if (status === 422) return AUTH_MESSAGES.unexpected;
+  if (status === 403) return AUTH_MESSAGES.inactive;
+  return AUTH_MESSAGES.unexpected;
+}
 
 export function signinMessage(status: number) {
   if (status === 401) return AUTH_MESSAGES.credentials;
