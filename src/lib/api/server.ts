@@ -6,6 +6,8 @@ import type { ApiEnvelope } from "@/lib/api/types";
 import { UpstreamError, upstreamFetch } from "@/lib/api/upstream";
 import { readSessionTokens } from "@/lib/auth/session";
 
+const EXPIRED_SESSION_ROUTE = "/login?expired=1";
+
 export type QueryParams = Record<
   string,
   string | number | boolean | null | undefined
@@ -31,7 +33,7 @@ export async function apiGet<T>(path: string, params?: QueryParams): Promise<T> 
     tokens,
   });
 
-  if (response.status === 401) redirect("/login");
+  if (response.status === 401) redirect(EXPIRED_SESSION_ROUTE);
 
   const raw = await response.text();
 

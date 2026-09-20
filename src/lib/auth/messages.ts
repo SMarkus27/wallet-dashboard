@@ -14,6 +14,7 @@ export const AUTH_MESSAGES = {
   recoveryExpired:
     "Este link de redefinição expirou ou já foi usado. Peça um novo para continuar.",
   passwordMismatch: "As senhas não conferem.",
+  sessionExpired: "Sua sessão expirou. Entre novamente para continuar.",
 } as const;
 
 export function recoveryMessage(status: number) {

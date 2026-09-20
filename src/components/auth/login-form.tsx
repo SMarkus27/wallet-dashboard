@@ -27,6 +27,7 @@ export function LoginForm() {
   const [pending, setPending] = useState(false);
 
   const destination = resolveRedirect(searchParams.get("next"));
+  const expired = searchParams.has("expired");
 
   function enter() {
     router.replace(destination);
@@ -88,10 +89,12 @@ export function LoginForm() {
         </p>
       </div>
 
-      {error ? (
+      {error ?? (expired ? AUTH_MESSAGES.sessionExpired : null) ? (
         <Alert variant="destructive">
           <TriangleAlertIcon />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {error ?? AUTH_MESSAGES.sessionExpired}
+          </AlertDescription>
         </Alert>
       ) : null}
 

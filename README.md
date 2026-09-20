@@ -133,6 +133,21 @@ O valor de `next` é validado contra a lista de rotas do painel antes de virar
 destino (`resolveRedirect`). Um `next` apontando para fora vira `/resumo`, para
 que a tela de login não possa ser usada como trampolim para outro domínio.
 
+### Cookie presente não é sessão válida
+
+O `proxy.ts` só sabe se o cookie **existe**; quem sabe se ele **vale** é a API.
+Quando ela recusa, `apiGet` manda para `/login?expired=1`, e é o parâmetro que
+quebra o ciclo: sem ele, o proxy veria o cookie, devolveria para o painel, o
+painel seria recusado de novo e o browser ficaria rebatendo entre as duas
+rotas — uma tela em branco com só a barra de navegação.
+
+Ao atender essa volta, o proxy **apaga os cookies de sessão**, para a próxima
+visita começar limpa em vez de repetir o desencontro. O login exibe o motivo,
+porque cair numa tela de entrada sem explicação parece defeito.
+
+Isso acontece sempre que o cookie sobrevive ao que o autenticava: segredo JWT
+trocado, banco recriado, família de refresh revogada em outro dispositivo.
+
 O arquivo de rotas (`src/lib/routes.ts`) é a fonte única das abas: alimenta a
 navegação, o destino padrão e essa validação de redirecionamento.
 
