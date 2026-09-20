@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/auth/cookies";
 
 const LOGIN_ROUTE = "/login";
+const RESET_ROUTE = "/reset-password";
+const PUBLIC_ROUTES = [LOGIN_ROUTE, "/forgot-password"];
 const DEFAULT_ROUTE = "/resumo";
 const REDIRECT_PARAM = "next";
 
@@ -13,7 +15,7 @@ export function proxy(request: NextRequest) {
       request.cookies.get(REFRESH_TOKEN_COOKIE)?.value,
   );
 
-  if (!authenticated && pathname !== LOGIN_ROUTE) {
+  if (!authenticated && !isPublic(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = LOGIN_ROUTE;
     url.search = "";
@@ -31,6 +33,12 @@ export function proxy(request: NextRequest) {
   }
 
   return NextResponse.next();
+}
+
+function isPublic(pathname: string) {
+  return (
+    PUBLIC_ROUTES.includes(pathname) || pathname.startsWith(`${RESET_ROUTE}/`)
+  );
 }
 
 export const config = {

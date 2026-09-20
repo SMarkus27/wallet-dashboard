@@ -92,6 +92,36 @@ cookies httpOnly do próprio dashboard e **troca o corpo** por
 `{ "authenticated": true }` antes de responder. É por isso que o formulário de
 login não guarda nada: ele só olha o status e o `mfa_signin_token`.
 
+### Recuperação de senha
+
+```
+/forgot-password                 pede o link por e-mail
+/reset-password/<token>          define a nova senha e já entra
+```
+
+**A rota do reset não é escolha do dashboard.** O e-mail é montado pela API com
+`{frontend_origin}/reset-password/{token}`, então esse caminho é contrato: mudá-lo
+quebra todo link já enviado.
+
+O token é conferido **no servidor**, antes de a página renderizar. Um link vencido
+mostra de cara que expirou, em vez de deixar o usuário digitar uma senha nova para
+só então descobrir que não valia.
+
+A tela de pedido responde a mesma coisa para e-mail cadastrado e não cadastrado,
+porque a API também responde: `SendRecoveryPasswordEmailService` retorna em
+silêncio quando o usuário não existe ou está inativo. Mostrar "e-mail não
+encontrado" entregaria quais endereços têm conta.
+
+Redefinir a senha **cria a sessão**, e uma conta com segundo fator recebe o
+desafio na resposta do reset. Por isso a etapa do código foi extraída para um
+componente que login e reset compartilham: sem ela, o reset redirecionaria para o
+painel sem sessão nenhuma.
+
+As regras de senha aparecem como dica na tela, mas quem valida é a API — as
+mensagens dela já vêm em português e são exibidas como estão, sem o prefixo
+`Value error,` que o Pydantic acrescenta. A conferência de senhas iguais é feita
+antes de enviar, porque não precisa de rede para saber a resposta.
+
 ### Proteção de rotas
 
 `src/proxy.ts` — no Next 16 o arquivo `middleware.ts` foi renomeado para
@@ -154,7 +184,7 @@ src/
 │   ├── globals.css             # design tokens e tema
 │   └── layout.tsx
 ├── components/
-│   ├── auth/                   # formulário de login
+│   ├── auth/                   # login, segundo fator e recuperação de senha
 │   ├── charts/                 # gráficos e tokens de série
 │   ├── earnings/               # filtros e tabela de proventos
 │   ├── filters/                # linha de seletores reaproveitada
@@ -360,11 +390,11 @@ confirmação pensada.
 |---|---|
 | Setup, temas, camada de API e BFF | Pronto |
 | Tela de login, segundo fator e proteção de rotas | Pronto |
+| Recuperação de senha | Pronto |
 | Aba Resumo | Pronto |
 | Aba Proventos | Pronto |
 | Aba Gráficos | Pronto |
 | Aba IRPF | Pronto |
 
-A recuperação de senha (`/auth/recovery/*`) existe na API e ainda não tem tela.
 Os proventos futuros dependem do catálogo `announced_earnings`, alimentado pelas
 rotas internas da API — a aba mostra a coluna vazia enquanto ele estiver vazio.
