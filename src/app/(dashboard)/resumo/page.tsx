@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { AllocationDonut } from "@/components/charts/allocation-donut";
+import { ShareDonut } from "@/components/charts/share-donut";
 import { EquityChart } from "@/components/charts/equity-chart";
 import { AssetTypeTable } from "@/components/summary/asset-type-table";
 import { SummaryStats } from "@/components/summary/summary-stats";
@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getAllocation, getEquityHistory, getOverview } from "@/lib/api/portfolio";
-import { donutSlices, groupByAssetType } from "@/lib/portfolio/summary";
+import { assetTypeShares, groupByAssetType } from "@/lib/portfolio/summary";
 
 export const metadata: Metadata = { title: "Resumo" };
 
@@ -53,7 +53,10 @@ export default async function ResumoPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <AllocationDonut slices={donutSlices(allocation.asset_types)} />
+          <ShareDonut
+            data={assetTypeShares(allocation.asset_types)}
+            measure="Participação na carteira"
+          />
         </CardContent>
       </Card>
 

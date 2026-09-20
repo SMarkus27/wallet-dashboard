@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { ShareBarChart } from "@/components/charts/share-bar-chart";
+import { ShareDonut } from "@/components/charts/share-donut";
 import { FilterRow } from "@/components/filters/filter-row";
 import {
   Card,
@@ -64,10 +64,10 @@ export function AllocationSharesCard({
       <Card>
         <CardHeader>
           <CardTitle>Porcentagem real por setor</CardTitle>
-          <CardDescription>{measure}, do maior para o menor.</CardDescription>
+          <CardDescription>{measure}, da maior fatia para a menor.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ShareBarChart
+          <ShareDonut
             data={sectors}
             measure={measure}
             emptyMessage="Nenhum setor com posição nesse recorte."
@@ -78,10 +78,10 @@ export function AllocationSharesCard({
       <Card>
         <CardHeader>
           <CardTitle>Porcentagem de cada ativo</CardTitle>
-          <CardDescription>{measure}, do maior para o menor.</CardDescription>
+          <CardDescription>{measure}, da maior fatia para a menor.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ShareBarChart
+          <ShareDonut
             data={assets}
             measure={measure}
             emptyMessage="Nenhum ativo com posição nesse recorte."
