@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { XIcon } from "lucide-react";
 
 import { EarningsChart } from "@/components/charts/earnings-chart";
 import { FilterRow } from "@/components/filters/filter-row";
@@ -17,7 +18,7 @@ import type {
   PortfolioEarnings,
   PortfolioScheduledEarnings,
 } from "@/lib/api/types";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatMonthLong } from "@/lib/format";
 import {
   ANY,
   EARNING_STATUSES,
@@ -49,21 +50,33 @@ export function EarningsView({
   const [ticker, setTicker] = useState(ANY);
   const [assetType, setAssetType] = useState(ANY);
   const [granularity, setGranularity] = useState<Granularity>("MONTH");
+  const [bucket, setBucket] = useState<string | null>(null);
 
   const byAsset = useMemo(
     () => applyFilters(rows, { status: ANY, ticker, assetType }),
     [rows, ticker, assetType],
   );
 
-  const tableRows = useMemo(
-    () => applyFilters(byAsset, { status, ticker: ANY, assetType: ANY }),
-    [byAsset, status],
-  );
-
   const chartPoints = useMemo(
     () => toSeries(byAsset.filter((row) => row.status === "RECEIVED"), granularity),
     [byAsset, granularity],
   );
+
+  const selected = chartPoints.some((point) => point.reference === bucket)
+    ? bucket
+    : null;
+
+  const tableRows = useMemo(() => {
+    const filtered = applyFilters(byAsset, {
+      status,
+      ticker: ANY,
+      assetType: ANY,
+    });
+
+    return selected
+      ? filtered.filter((row) => row.reference.startsWith(selected))
+      : filtered;
+  }, [byAsset, status, selected]);
 
   const receivedTotal = totalOf(byAsset.filter((row) => row.status === "RECEIVED"));
   const scheduledTotal = totalOf(byAsset.filter((row) => row.status === "SCHEDULED"));
@@ -133,11 +146,22 @@ export function EarningsView({
               Dividendos e JCP empilhados, no valor líquido que entrou na conta.
             </CardDescription>
           </div>
-          <GranularityToggle value={granularity} onChange={setGranularity} />
+          <GranularityToggle
+            value={granularity}
+            onChange={(value) => {
+              setGranularity(value);
+              setBucket(null);
+            }}
+          />
         </CardHeader>
         <CardContent>
           {chartPoints.length > 0 ? (
-            <EarningsChart points={chartPoints} granularity={granularity} />
+            <EarningsChart
+              points={chartPoints}
+              granularity={granularity}
+              selected={selected}
+              onSelect={setBucket}
+            />
           ) : (
             <p className="py-10 text-center text-sm text-muted-foreground">
               Nenhum provento recebido para os filtros selecionados.
@@ -147,12 +171,20 @@ export function EarningsView({
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Histórico mensal</CardTitle>
-          <CardDescription>
-            {tableRows.length} pagamento{tableRows.length === 1 ? "" : "s"} ·{" "}
-            {formatCurrency(totalOf(tableRows))}
-          </CardDescription>
+        <CardHeader className="flex-row items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <CardTitle>Histórico mensal</CardTitle>
+            <CardDescription>
+              {tableRows.length} pagamento{tableRows.length === 1 ? "" : "s"} ·{" "}
+              {formatCurrency(totalOf(tableRows))}
+            </CardDescription>
+          </div>
+          {selected ? (
+            <BucketChip
+              label={bucketLabel(selected, granularity)}
+              onClear={() => setBucket(null)}
+            />
+          ) : null}
         </CardHeader>
         <CardContent className="px-2">
           <EarningsTable groups={groupByMonth(tableRows)} />
@@ -160,6 +192,32 @@ export function EarningsView({
       </Card>
     </div>
   );
+}
+
+function BucketChip({
+  label,
+  onClear,
+}: {
+  label: string;
+  onClear: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      onClick={onClear}
+      className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
+    >
+      <span className="first-letter:uppercase">{label}</span>
+      <XIcon aria-hidden className="size-3.5" />
+      <span className="sr-only">Limpar recorte do gráfico</span>
+    </Button>
+  );
+}
+
+function bucketLabel(reference: string, granularity: Granularity) {
+  return granularity === "YEAR" ? reference : formatMonthLong(reference);
 }
 
 function GranularityToggle({

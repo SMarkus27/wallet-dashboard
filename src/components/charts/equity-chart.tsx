@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import {
   Area,
+  Brush,
   CartesianGrid,
   ComposedChart,
   Line,
@@ -12,7 +13,8 @@ import {
   YAxis,
 } from "recharts";
 
-import { ChartTooltip } from "@/components/charts/chart-tooltip";
+import { ChartLegend, type LegendSeries } from "@/components/charts/chart-legend";
+import { ChartTooltip, type TooltipRow } from "@/components/charts/chart-tooltip";
 import {
   AXIS_LINE,
   AXIS_TICK,
@@ -20,6 +22,7 @@ import {
   SURFACE,
   seriesColor,
 } from "@/components/charts/chart-tokens";
+import { useChartLegend } from "@/components/charts/use-chart-legend";
 import type { EquityPoint } from "@/lib/api/types";
 import {
   formatCompactCurrency,
@@ -32,9 +35,31 @@ import {
 const INVESTED_COLOR = seriesColor(0);
 const EQUITY_COLOR = seriesColor(1);
 
+const EQUITY_KEY = "equity";
+const INVESTED_KEY = "invested";
+
+const SERIES: readonly LegendSeries[] = [
+  { key: EQUITY_KEY, label: "Patrimônio", color: EQUITY_COLOR, shape: "line" },
+  { key: INVESTED_KEY, label: "Valor aplicado", color: INVESTED_COLOR },
+];
+
+const SERIES_KEYS = SERIES.map((item) => item.key);
+
 const MIN_TICK_GAP = 36;
 
 const MIN_POINTS = 2;
+
+const BRUSH_MIN_POINTS = 8;
+
+const PLOT_HEIGHT = 280;
+
+const BRUSH_HEIGHT = 30;
+
+const ANIMATION_DURATION = 600;
+
+const AREA_FILL_OPACITY = 0.14;
+
+const ACTIVE_DOT_RADIUS = 4;
 
 type Point = {
   reference: string;
@@ -45,6 +70,8 @@ type Point = {
 };
 
 export function EquityChart({ months }: { months: EquityPoint[] }) {
+  const legend = useChartLegend(SERIES_KEYS);
+
   const data = useMemo<Point[]>(
     () =>
       months.map((month) => ({
@@ -67,11 +94,23 @@ export function EquityChart({ months }: { months: EquityPoint[] }) {
     );
   }
 
+  const zoomable = data.length >= BRUSH_MIN_POINTS;
+
   return (
     <div className="flex flex-col gap-3">
-      <ChartLegend />
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <ChartLegend series={SERIES} state={legend} />
+        <p className="px-2 text-xs text-subtle-foreground">
+          {zoomable
+            ? "Clique na legenda para isolar uma série · arraste a faixa abaixo para recortar o período"
+            : "Clique na legenda para isolar uma série"}
+        </p>
+      </div>
 
-      <ResponsiveContainer width="100%" height={280}>
+      <ResponsiveContainer
+        width="100%"
+        height={zoomable ? PLOT_HEIGHT + BRUSH_HEIGHT : PLOT_HEIGHT}
+      >
         <ComposedChart
           data={data}
           margin={{ top: 4, right: 8, bottom: 0, left: 8 }}
@@ -98,97 +137,111 @@ export function EquityChart({ months }: { months: EquityPoint[] }) {
 
           <Tooltip
             cursor={{ stroke: "var(--color-axis)", strokeWidth: 1 }}
-            content={<EquityTooltip />}
+            content={<EquityTooltip hidden={legend.hidden} />}
           />
 
           <Area
             type="monotone"
-            dataKey="invested"
+            dataKey={INVESTED_KEY}
             name="Valor aplicado"
+            hide={legend.isHidden(INVESTED_KEY)}
             stroke={INVESTED_COLOR}
             strokeWidth={2}
+            strokeOpacity={legend.opacityOf(INVESTED_KEY)}
             fill={INVESTED_COLOR}
-            fillOpacity={0.14}
-            activeDot={{ r: 4, strokeWidth: 2, stroke: SURFACE }}
+            fillOpacity={AREA_FILL_OPACITY * legend.opacityOf(INVESTED_KEY)}
+            activeDot={{
+              r: ACTIVE_DOT_RADIUS,
+              strokeWidth: 2,
+              stroke: SURFACE,
+            }}
+            animationDuration={ANIMATION_DURATION}
           />
 
           <Line
             type="monotone"
-            dataKey="equity"
+            dataKey={EQUITY_KEY}
             name="Patrimônio"
+            hide={legend.isHidden(EQUITY_KEY)}
             stroke={EQUITY_COLOR}
             strokeWidth={2}
+            strokeOpacity={legend.opacityOf(EQUITY_KEY)}
             dot={false}
-            activeDot={{ r: 4, strokeWidth: 2, stroke: SURFACE }}
+            activeDot={{
+              r: ACTIVE_DOT_RADIUS,
+              strokeWidth: 2,
+              stroke: SURFACE,
+            }}
+            animationDuration={ANIMATION_DURATION}
           />
+
+          {zoomable ? (
+            <Brush
+              dataKey="reference"
+              height={BRUSH_HEIGHT - 8}
+              travellerWidth={8}
+              gap={1}
+              stroke="var(--color-axis)"
+              fill="var(--color-muted)"
+              tickFormatter={formatMonthReference}
+              ariaLabel="Recorte do período exibido"
+            />
+          ) : null}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
-function ChartLegend() {
-  return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-      <LegendItem color={EQUITY_COLOR} label="Patrimônio" />
-      <LegendItem color={INVESTED_COLOR} label="Valor aplicado" />
-    </ul>
-  );
-}
-
-function LegendItem({ color, label }: { color: string; label: string }) {
-  return (
-    <li className="flex items-center gap-1.5">
-      <span
-        aria-hidden
-        className="size-2 rounded-[2px]"
-        style={{ backgroundColor: color }}
-      />
-      {label}
-    </li>
-  );
-}
-
 function EquityTooltip({
   active,
   payload,
+  hidden,
 }: {
   active?: boolean;
   payload?: { payload: Point }[];
+  hidden?: ReadonlySet<string>;
 }) {
   const point = payload?.[0]?.payload;
 
   if (!active || !point) return null;
 
-  return (
-    <ChartTooltip
-      title={formatMonthLong(point.reference)}
-      rows={[
-        {
-          key: "equity",
-          label: "Patrimônio",
-          value: formatCurrency(point.equity),
-          color: EQUITY_COLOR,
-        },
-        {
-          key: "invested",
-          label: "Valor aplicado",
-          value: formatCurrency(point.invested),
-          color: INVESTED_COLOR,
-        },
-        {
-          key: "gain",
-          label: "Ganho de capital",
-          value: formatCurrency(point.gain),
-          muted: true,
-        },
-        {
-          key: "earnings",
-          label: "Proventos acumulados",
-          value: formatCurrency(point.earnings),
-          muted: true,
-        },
-      ]}
-    />
-  );
+  const visible = (key: string) => !hidden?.has(key);
+
+  const rows: TooltipRow[] = [
+    ...(visible(EQUITY_KEY)
+      ? [
+          {
+            key: EQUITY_KEY,
+            label: "Patrimônio",
+            value: formatCurrency(point.equity),
+            color: EQUITY_COLOR,
+          },
+        ]
+      : []),
+    ...(visible(INVESTED_KEY)
+      ? [
+          {
+            key: INVESTED_KEY,
+            label: "Valor aplicado",
+            value: formatCurrency(point.invested),
+            color: INVESTED_COLOR,
+          },
+        ]
+      : []),
+    {
+      key: "gain",
+      label: "Ganho de capital",
+      value: formatCurrency(point.gain),
+      muted: true,
+    },
+    {
+      key: "earnings",
+      label: "Proventos acumulados",
+      value: formatCurrency(point.earnings),
+      muted: true,
+    },
+  ];
+
+  return <ChartTooltip title={formatMonthLong(point.reference)} rows={rows} />;
 }

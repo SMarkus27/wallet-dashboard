@@ -13,6 +13,18 @@ export function measureFor(assetType: string) {
   return assetType === ALL_TYPES ? WALLET_MEASURE : CLASS_MEASURE;
 }
 
+export function defaultAssetType(allocation: PortfolioAllocation) {
+  const largest = [...allocation.asset_types]
+    .filter((slice) => toNumber(slice.market_value) > 0)
+    .sort(
+      (left, right) =>
+        toNumber(right.market_value) - toNumber(left.market_value),
+    )
+    .at(0);
+
+  return largest?.name ?? ALL_TYPES;
+}
+
 export function assetTypeOptions(allocation: PortfolioAllocation) {
   return [
     { value: ALL_TYPES, label: "Todas as classes" },

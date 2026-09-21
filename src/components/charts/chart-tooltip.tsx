@@ -33,13 +33,11 @@ export function ChartTooltip({
       <dl className="flex flex-col gap-1">
         {rows.map((row) => (
           <div key={row.key} className="flex items-center gap-2 text-xs">
-            {row.color ? (
-              <span
-                aria-hidden
-                className="size-2 shrink-0 rounded-[2px]"
-                style={{ backgroundColor: row.color }}
-              />
-            ) : null}
+            <span
+              aria-hidden
+              className="h-0.5 w-3 shrink-0 rounded-full"
+              style={{ backgroundColor: row.color ?? "transparent" }}
+            />
             <dt
               className={cn(
                 "flex-1",
@@ -48,7 +46,9 @@ export function ChartTooltip({
             >
               {row.label}
             </dt>
-            <dd className="font-medium tabular-nums">{row.value}</dd>
+            <dd className="font-medium text-foreground tabular-nums">
+              {row.value}
+            </dd>
           </div>
         ))}
       </dl>

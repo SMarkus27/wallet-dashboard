@@ -16,6 +16,7 @@ import {
   ALL_TYPES,
   assetShares,
   assetTypeOptions,
+  defaultAssetType,
   measureFor,
   sectorShares,
 } from "@/lib/portfolio/shares";
@@ -25,7 +26,9 @@ export function AllocationSharesCard({
 }: {
   allocation: PortfolioAllocation;
 }) {
-  const [assetType, setAssetType] = useState(ALL_TYPES);
+  const [assetType, setAssetType] = useState(() =>
+    defaultAssetType(allocation),
+  );
 
   const measure = measureFor(assetType);
   const sectors = sectorShares(allocation, assetType);
@@ -43,7 +46,8 @@ export function AllocationSharesCard({
           <CardTitle>Recorte</CardTitle>
           <CardDescription>
             O mesmo filtro vale para os dois gráficos abaixo. Os percentuais são
-            calculados {scope}.
+            calculados {scope} — a tela abre na classe com a maior posição, e
+            &quot;Todas as classes&quot; volta para a carteira inteira.
           </CardDescription>
         </CardHeader>
         <CardContent>

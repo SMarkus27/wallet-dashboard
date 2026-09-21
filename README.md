@@ -40,13 +40,22 @@ o banco migrado.
 
 | Variável | Padrão | Para que serve |
 |---|---|---|
-| `WALLET_API_URL` | `http://127.0.0.1:8000` | Origem da API do Wallet. **Só é lida no servidor** — nunca chega ao browser |
+| `WALLET_API_URL` | `http://127.0.0.1:8000` **só em desenvolvimento** | Origem da API do Wallet. **Só é lida no servidor** — nunca chega ao browser |
+| `WALLET_API_PREFIX` | `/api/v1` | Prefixo de versão da API. Trocar a versão não exige mexer no código |
 | `WALLET_ACCESS_TOKEN_COOKIE_NAME` | `access_token` | Nome do cookie de acesso que a API espera |
 | `WALLET_REFRESH_TOKEN_COOKIE_NAME` | `refresh_token` | Nome do cookie de refresh que a API espera |
 
 Os dois últimos espelham `ACCESS_TOKEN_COOKIE_NAME` e
 `REFRESH_TOKEN_COOKIE_NAME` do `Settings` da API; só precisam ser informados se
 lá forem trocados.
+
+`WALLET_API_URL` **não tem padrão em produção**: sem a variável, a primeira
+requisição estoura com um erro que diz o nome dela. Um padrão de `localhost` em
+produção falharia calado — o deploy subiria, a tela mostraria erro de rede e a
+causa (variável esquecida) só apareceria depois de investigar. O padrão continua
+valendo em desenvolvimento, onde a API é sempre local. A checagem é feita na
+requisição, não na carga do módulo, para o `npm run build` não depender do
+ambiente de execução.
 
 ## Por que um BFF em vez de chamar a API do browser
 
@@ -177,15 +186,126 @@ Os tokens vivem em `src/app/globals.css`, declarados em `:root` e redefinidos em
 `.dark`. A troca é feita pelo `next-themes` com a estratégia de classe, e a
 opção "Sistema" acompanha o `prefers-color-scheme`.
 
-A paleta de séries dos gráficos (`--chart-1` a `--chart-8`) **não é o mesmo
+A paleta de séries dos gráficos (`--chart-1` a `--chart-11`) **não é o mesmo
 conjunto de cores clareado para o escuro**: cada modo tem seus próprios passos,
 escolhidos para a superfície em que são desenhados. A paleta foi validada nos
 dois modos para faixa de luminosidade, piso de croma, separação sob daltonismo
 (ΔE ≥ 8 entre pares adjacentes) e contraste contra a superfície.
 
+Os oito primeiros matizes são os originais, na mesma ordem — trocar a ordem
+repintaria todo gráfico já existente, e cor deve seguir a entidade, não a
+posição dela na lista. Ciano, oliva e magenta foram anexados como 9, 10 e 11
+nessa ordem porque é a única que passa a checagem de daltonismo: ciano encostado
+em magenta ou em roxo colapsa sob deuteranopia (ΔE 3,9), e roxo teve de ficar
+fora — onze é o teto que a validação aceita, não uma escolha estética.
+
+### Além de onze séries, o matiz repete com outro passo
+
+Uma carteira de trinta ativos precisa de trinta cores distintas, e trinta
+matizes distinguíveis não existem. Então `seriesColor` combina dois canais: o
+matiz cicla de onze em onze e o **passo** muda a cada volta — o segundo passo
+mistura 74% do matiz com `--foreground`, o terceiro com `--background`, via
+`color-mix(in oklab, …)`.
+
+Como `--foreground` é quase preto no claro e branco no escuro, o segundo passo
+sempre anda **para longe da superfície** (escurece no claro, clareia no escuro) e
+o terceiro para o lado oposto. São 11 × 3 = 33 combinações, nenhuma igual à
+outra, e dois ativos do mesmo matiz ficam sempre onze posições distantes na
+ordem por tamanho.
+
+Isso é encoding composto, não paleta categórica: acima de onze fatias o matiz
+deixa de identificar sozinho, e quem carrega a identidade exata é a tabela ao
+lado, sincronizada com o desenho no hover e no clique. Se algum dia a pergunta
+virar "comparar trinta ativos entre si" em vez de "ver a composição", a forma
+certa deixa de ser rosca e passa a ser barra — trinta barras se leem, trinta
+arcos não.
+
 No modo claro três séries ficam abaixo de 3:1 contra a superfície. Isso é
 aceitável porque nenhum gráfico usa cor como único canal: toda série tem rótulo
 direto ou legenda, e todo gráfico tem a tabela equivalente na mesma tela.
+
+## Gráficos interativos
+
+Nenhum gráfico é só desenho: em todos, a legenda é controle e o gesto do mouse
+muda o que está em foco. As regras são as mesmas nas três formas, para o leitor
+não precisar reaprender a tela em cada aba.
+
+### A legenda é um botão
+
+Clicar em uma série a esconde (`hide` do Recharts, com o eixo recalculando o
+domínio); passar o mouse esmaece as outras. É a forma mais direta de responder
+"quanto disso é JCP?" ou "como fica a linha de patrimônio sem a área de valor
+aplicado?" sem outro filtro na tela.
+
+A última série visível não pode ser desligada — um gráfico vazio não é um
+estado útil, é um beco sem saída de onde o leitor só sai tentando clicar de
+novo. O estado vive em `useChartLegend`, compartilhado pelos dois gráficos
+cartesianos.
+
+### Séries longas ganham faixa de recorte
+
+Acima de oito pontos (patrimônio) ou quatorze (proventos) entra um `Brush`: com
+trinta meses em tela as barras ficam finas demais para comparar duas vizinhas.
+O recorte é visual e local ao gráfico — diferente do filtro de `period` da aba
+Gráficos, que refaz a busca no servidor e muda a série inteira.
+
+### A rosca não tem tooltip
+
+Ela tem leitor no centro. O tooltip do Recharts nasce sob o ponteiro, e o
+ponteiro está sobre a rosca: a caixa cobria exatamente o buraco do meio, onde o
+valor da fatia é mostrado. Então a fatia sob o mouse cresce, as outras esmaecem,
+e o centro passa a exibir rótulo, percentual e saldo daquela fatia. Nada se
+perde: "Classe" e "Meta", que o tooltip mostrava, são duas colunas da tabela ao
+lado.
+
+Passar o mouse em uma linha da tabela destaca a fatia correspondente, e clicar
+**fixa** o destaque — útil para olhar a rosca e a tabela sem manter o mouse
+parado. O clique é num botão dentro da linha, não na linha inteira:
+`role="button"` no `<tr>` trocaria o papel da linha na tabela, e é justamente a
+tabela que garante a leitura sem cor.
+
+### O arco é desenhado pelo saldo, não pelo percentual
+
+A API arredonda percentual em duas casas (`PERCENTAGE_PRECISION = 0.01`). Com a
+rosca desenhada por `dataKey="percentage"`, qualquer fatia abaixo de 0,005%
+virava `0,00%` e saía com **ângulo zero** — invisível no desenho, mas com saldo
+na tabela ao lado. Uma posição de R$ 20 numa classe de R$ 480 mil desaparecia
+exatamente assim.
+
+Agora o `dataKey` é `value`: o ângulo é o dinheiro, e o percentual continua
+sendo só o que se **lê**. Os dois coincidem quando o arredondamento não morde, e
+quando morde é o desenho que está certo.
+
+### A cauda dobrada é um grupo, não uma fila de cores iguais
+
+A primeira versão dava a cor do arco "Outros" para cada linha dobrada. Numa
+carteira de doze ativos isso virava sete quadradinhos verdes idênticos empilhados
+na tabela — a coluna de cor deixava de identificar qualquer coisa e parecia erro
+de renderização.
+
+Agora a cor mora só onde existe arco: a tabela ganha uma linha "Outros (N)" com o
+quadrado verde e os valores somados, e as dobradas entram **abaixo dela**,
+recuadas e com um traço em vez de cor. Passar o mouse ou clicar em qualquer uma
+delas destaca o arco de "Outros" inteiro, que é onde elas estão desenhadas.
+
+### Clicar numa barra de proventos filtra a tabela
+
+A pergunta que segue o gráfico é sempre "de onde veio esse mês?". O clique na
+coluna recorta o histórico abaixo (`startsWith` na referência, o que serve tanto
+para `2025-03` quanto para `2025` no agrupamento por ano), as outras barras
+esmaecem e um botão com o nome do período desfaz o recorte. Trocar a
+granularidade limpa a seleção, e uma seleção que sai do recorte atual é
+descartada sozinha — não existe estado filtrando a tabela sem barra acesa
+correspondente.
+
+### Animação é opt-out do sistema
+
+As entradas e o crescimento da fatia usam o padrão `isAnimationActive: "auto"`
+do Recharts 3: em quem tem `prefers-reduced-motion: reduce`, nada anima. O foco
+por mouse dentro do gráfico não desenha anel (`:focus:not(:focus-visible)` em
+`globals.css`) — o Recharts move o foco para camadas internas ao clicar, e o
+anel aparecia em volta da barra clicada como se fosse artefato. Pelo teclado o
+anel continua.
 
 ## Estrutura
 
@@ -247,13 +367,14 @@ mesmo setor mostram a mesma meta, e isso é o correto: é o alvo que existe.
 
 Três cores do modo claro ficam abaixo de 3:1 contra a superfície, então a rosca
 nunca carrega a informação sozinha: a tabela ao lado repete cada fatia com
-percentual real, ideal e saldo. Acima de seis fatias a cauda do desenho vira
-"Outros" — passar disso põe na tela cores que ninguém distingue —, mas a tabela
-continua listando todas.
+percentual real, ideal e saldo. **Todo ativo é desenhado**: a rosca tem 33 cores
+distintas (11 matizes × 3 passos), e só acima disso a cauda vira "Outros (n)" —
+agrupada na tabela, nunca omitida.
 
 O componente (`ShareDonut`) é o mesmo que a aba Gráficos usa para setores e
 ativos: a pergunta é a mesma, composição percentual, e duas formas diferentes
-para a mesma pergunta só custariam ao leitor.
+para a mesma pergunta só custariam ao leitor. Rosca e tabela são sincronizadas
+nos dois sentidos — ver [Gráficos interativos](#gráficos-interativos).
 
 ### Nomes de classe
 
@@ -303,6 +424,9 @@ ganho pode ser negativo e a pilha deixaria de fechar.
 O alternador troca a granularidade em vez de recortar um intervalo: com anos, a
 mesma série responde "quanto entrou por ano" sem precisar de outro endpoint.
 
+Clicar numa coluna recorta a tabela de histórico naquele período — ver
+[Gráficos interativos](#gráficos-interativos).
+
 ## Aba Gráficos
 
 Quatro leituras, com filtros que vivem em camadas diferentes porque as fontes de
@@ -326,6 +450,13 @@ Os dois saem do mesmo `/portfolio/allocation`, que traz a carteira inteira, ent�
 o recorte por classe é feito no cliente e o mesmo estado alimenta os dois
 gráficos — como pedido.
 
+A tela **abre na classe com a maior posição**, não em "Todas as classes". Sem
+recorte, os cinco maiores papéis da carteira ficam com todos os arcos e o resto
+cai em "Outros": quem tem FII menor que as ações não vê nenhum FII desenhado, só
+listado. Já recortado por classe, o denominador é a própria classe e cada papel
+dela ganha seu arco. "Todas as classes" continua a um clique, para a visão da
+carteira inteira.
+
 O denominador acompanha o recorte: sem filtro, o percentual é **sobre a
 carteira** (`wallet_real_percentage`); com uma classe escolhida, é **sobre a
 classe** (`real_percentage`), e os valores passam a somar 100%. O subtítulo de
@@ -344,15 +475,15 @@ etiquetas repetidas ganham o sufixo da classe, e as únicas seguem limpas.
 São percentuais de uma composição, então a forma é a rosca — a mesma do Resumo, e
 por isso o componente é um só.
 
-A rosca sozinha não daria conta: acima de seis fatias as cores deixam de ser
-distinguíveis, e uma carteira com treze setores viraria confete. Quem resolve é o
-par: **a rosca dobra a cauda em "Outros (n)" e a tabela ao lado lista todas as
-fatias**, com percentual real, meta e saldo. Dobrar esconde a fatia no desenho,
-nunca o número.
+A rosca sozinha não daria conta: acima de onze fatias o matiz deixa de
+identificar, e uma carteira com trinta ativos é confete por definição. Quem
+resolve é o par: **a rosca desenha todas as fatias e a tabela ao lado lista
+todas**, com percentual real, meta e saldo, as duas sincronizadas no hover e no
+clique. Acima de trinta e três fatias — o teto da paleta — a cauda vira
+"Outros (n)", com as dobradas agrupadas sob essa linha.
 
-As linhas dobradas herdam a cor do arco "Outros", para o olho ligar a linha ao
-lugar onde ela está desenhada; um quadradinho cinza sem explicação pareceria
-falha de renderização.
+Acima de doze fatias a rosca cresce e afina: o vão entre arcos cai de 2° para
+0,5° e o anel ganha largura, senão o próprio vão comeria as fatias pequenas.
 
 ## Aba IRPF
 
