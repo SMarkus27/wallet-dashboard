@@ -1,4 +1,6 @@
 const MFA_TOKEN_MARKER = "login token";
+const RETRY_LIMIT_MARKER = "effort limit";
+const ACCOUNT_EXISTS_MARKER = "already exists";
 
 export const AUTH_MESSAGES = {
   credentials: "E-mail ou senha incorretos. Verifique e tente novamente.",
@@ -15,6 +17,15 @@ export const AUTH_MESSAGES = {
     "Este link de redefinição expirou ou já foi usado. Peça um novo para continuar.",
   passwordMismatch: "As senhas não conferem.",
   sessionExpired: "Sua sessão expirou. Entre novamente para continuar.",
+  signupEmailTaken:
+    "Já existe uma conta com esse e-mail. Entre em vez de criar outra.",
+  signupCodeSent:
+    "Enviamos um código de 6 dígitos para o seu e-mail. Ele vale por duas horas.",
+  signupCodeResent:
+    "O código anterior expirou. Enviamos um novo para o seu e-mail.",
+  signupInvalidCode: "Código inválido. Confira o e-mail e tente novamente.",
+  signupRetryLimit:
+    "Tentativas demais. Aguarde alguns minutos antes de tentar de novo.",
 } as const;
 
 export function recoveryMessage(status: number) {
@@ -46,5 +57,28 @@ export function mfaMessage(status: number, detail: string) {
   if (status === 400) return AUTH_MESSAGES.invalidCode;
   if (status === 403) return AUTH_MESSAGES.inactive;
   if (status === 422) return AUTH_MESSAGES.invalidCode;
+  return AUTH_MESSAGES.unexpected;
+}
+
+export function signupMessage(status: number, detail: string) {
+  if (status === 409) return AUTH_MESSAGES.signupEmailTaken;
+  if (status === 403) return AUTH_MESSAGES.inactive;
+  if (status === 422 && detail) return detail;
+  return AUTH_MESSAGES.unexpected;
+}
+
+export function confirmSignupMessage(status: number, detail: string) {
+  const normalized = detail.toLowerCase();
+
+  if (status === 409 && normalized.includes(RETRY_LIMIT_MARKER)) {
+    return AUTH_MESSAGES.signupRetryLimit;
+  }
+
+  if (status === 409 && normalized.includes(ACCOUNT_EXISTS_MARKER)) {
+    return AUTH_MESSAGES.signupEmailTaken;
+  }
+
+  if (status === 409 || status === 422) return AUTH_MESSAGES.signupInvalidCode;
+
   return AUTH_MESSAGES.unexpected;
 }

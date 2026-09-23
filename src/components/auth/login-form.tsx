@@ -134,6 +134,10 @@ export function LoginForm() {
         <Button variant="ghost" size="sm" asChild>
           <Link href="/forgot-password">Esqueci minha senha</Link>
         </Button>
+
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/signup">Criar conta</Link>
+        </Button>
       </form>
     </div>
   );

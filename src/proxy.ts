@@ -4,7 +4,7 @@ import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/auth/cookies";
 
 const LOGIN_ROUTE = "/login";
 const RESET_ROUTE = "/reset-password";
-const PUBLIC_ROUTES = [LOGIN_ROUTE, "/forgot-password"];
+const PUBLIC_ROUTES = [LOGIN_ROUTE, "/signup", "/forgot-password"];
 const DEFAULT_ROUTE = "/resumo";
 const REDIRECT_PARAM = "next";
 const EXPIRED_PARAM = "expired";
