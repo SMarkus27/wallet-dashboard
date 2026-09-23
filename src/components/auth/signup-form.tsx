@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { ApiError, api } from "@/lib/api/client";
 import {
   AUTH_MESSAGES,
@@ -281,10 +282,21 @@ export function SignupForm() {
           Continuar
         </Button>
 
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/login">Já tenho conta</Link>
-        </Button>
       </form>
+
+      <div className="flex flex-col gap-4">
+        <Separator />
+
+        <p className="text-center text-sm text-muted-foreground">
+          Já tem uma conta?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-foreground underline underline-offset-4"
+          >
+            Entrar
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
