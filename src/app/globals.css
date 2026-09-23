@@ -38,6 +38,9 @@
   --chart-6: #008300;
   --chart-7: #4a3aa7;
   --chart-8: #e34948;
+  --chart-9: #0f9bbf;
+  --chart-10: #7a8f1a;
+  --chart-11: #c33ba0;
   --status-good: #0ca30c;
   --status-warning: #fab219;
   --status-serious: #ec835a;
@@ -80,6 +83,9 @@
   --chart-6: #008300;
   --chart-7: #9085e9;
   --chart-8: #e66767;
+  --chart-9: #17a2c4;
+  --chart-10: #8a9a2e;
+  --chart-11: #d158ad;
   --status-good: #0ca30c;
   --status-warning: #fab219;
   --status-serious: #ec835a;
@@ -121,6 +127,9 @@
   --color-chart-6: var(--chart-6);
   --color-chart-7: var(--chart-7);
   --color-chart-8: var(--chart-8);
+  --color-chart-9: var(--chart-9);
+  --color-chart-10: var(--chart-10);
+  --color-chart-11: var(--chart-11);
   --color-status-good: var(--status-good);
   --color-status-warning: var(--status-warning);
   --color-status-serious: var(--status-serious);
@@ -152,5 +161,9 @@
   th,
   td {
     font-variant-numeric: tabular-nums;
+  }
+
+  .recharts-wrapper :focus:not(:focus-visible) {
+    outline: none;
   }
 }

@@ -27,7 +27,7 @@ export class UpstreamError extends Error {
 
 export function buildUpstreamUrl(path: string, search = "") {
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  return `${walletApiUrl}${walletApiPrefix}${normalized}${search}`;
+  return `${walletApiUrl()}${walletApiPrefix()}${normalized}${search}`;
 }
 
 export function buildCookieHeader(tokens: SessionTokens | undefined) {
