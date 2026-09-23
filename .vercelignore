@@ -1,0 +1,18 @@
+# O CLI da Vercel não lê o .gitignore: sem este arquivo, tudo o que está no
+# diretório sobe junto. Node e Next já ficam de fora por padrão
+# (node_modules, .next e .env.local), o resto é aqui.
+
+# Segredos e estado local
+.env*
+
+# Ferramentas de desenvolvimento
+.idea
+.vscode
+.claude
+CLAUDE.local.md
+
+# Caches e artefatos de build local
+tsconfig.tsbuildinfo
+
+# Não faz parte do build
+.github
