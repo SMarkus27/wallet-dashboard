@@ -28,6 +28,16 @@ export async function readSessionTokens(): Promise<SessionTokens> {
   };
 }
 
+const WALLET_SEGMENT = 2;
+
+export async function readActiveWalletId(): Promise<string | null> {
+  const { refreshToken } = await readSessionTokens();
+
+  if (!refreshToken) return null;
+
+  return refreshToken.split(":")[WALLET_SEGMENT] ?? null;
+}
+
 export async function hasSession(): Promise<boolean> {
   const { accessToken, refreshToken } = await readSessionTokens();
   return Boolean(accessToken || refreshToken);
