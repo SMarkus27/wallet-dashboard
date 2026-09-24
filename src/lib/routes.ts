@@ -5,6 +5,7 @@ export const DASHBOARD_ROUTES = [
   { href: "/proventos", label: "Proventos" },
   { href: "/graficos", label: "Gráficos" },
   { href: "/irpf", label: "IRPF" },
+  { href: "/carteiras", label: "Carteiras" },
 ] as const satisfies readonly { href: Route; label: string }[];
 
 export type DashboardRoute = (typeof DASHBOARD_ROUTES)[number]["href"];

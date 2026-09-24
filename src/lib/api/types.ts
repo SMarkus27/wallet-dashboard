@@ -19,6 +19,24 @@ export const ASSET_TYPES = [
   },
 ] as const;
 
+export const SECTORS = [
+  "Bancos",
+  "Energia",
+  "Telecomunicações",
+  "Seguradora",
+  "Saneamento",
+  "Shoppings",
+  "Papel",
+  "Logística",
+  "Escritórios",
+  "Híbrido",
+  "Infraestrutura",
+  "FOFS",
+  "Outros",
+] as const;
+
+export type SectorName = (typeof SECTORS)[number];
+
 export type AssetTypeName = (typeof ASSET_TYPES)[number]["name"];
 
 export type AssetType = (typeof ASSET_TYPES)[number]["value"];
