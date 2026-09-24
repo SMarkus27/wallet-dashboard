@@ -18,7 +18,7 @@ env:
 
 jobs:
     quality:
-        name: Lint, tipos e build
+        name: Lint, tipos, testes e build
         runs-on: ubuntu-latest
         timeout-minutes: 15
         steps:
@@ -39,6 +39,9 @@ jobs:
 
             - name: Check types
               run: npm run typecheck
+
+            - name: Tests
+              run: npm test
 
             - name: Build
               run: npm run build

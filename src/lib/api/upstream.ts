@@ -27,7 +27,7 @@ export class UpstreamError extends Error {
 
 const METHOD_PRESERVING_REDIRECTS = new Set([307, 308]);
 
-function sameOriginRedirect(from: string, location: string | null) {
+export function sameOriginRedirect(from: string, location: string | null) {
   if (!location) return null;
 
   const origin = new URL(from).origin;
