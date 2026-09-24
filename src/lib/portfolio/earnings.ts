@@ -21,6 +21,7 @@ export const EARNING_STATUS_LABELS: Record<EarningStatus, string> = {
 export const EARNING_KIND_LABELS: Record<EarningKind, string> = {
   DIVIDEND: "Dividendo",
   JCP: "JCP",
+  DISTRIBUTION: "Rendimento",
 };
 
 export const GRANULARITIES = ["MONTH", "YEAR"] as const;
@@ -65,7 +66,14 @@ export type SeriesPoint = {
   reference: string;
   dividends: number;
   interestOnEquity: number;
+  distributions: number;
   total: number;
+};
+
+const SERIES_FIELD: Record<EarningKind, keyof Omit<SeriesPoint, "reference">> = {
+  DIVIDEND: "dividends",
+  JCP: "interestOnEquity",
+  DISTRIBUTION: "distributions",
 };
 
 export function toRows(
@@ -118,12 +126,11 @@ export function toSeries(
       reference: key,
       dividends: 0,
       interestOnEquity: 0,
+      distributions: 0,
       total: 0,
     };
 
-    if (row.kind === "JCP") point.interestOnEquity += row.amount;
-    else point.dividends += row.amount;
-
+    point[SERIES_FIELD[row.kind]] += row.amount;
     point.total += row.amount;
     buckets.set(key, point);
   }

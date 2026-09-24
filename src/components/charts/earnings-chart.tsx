@@ -33,13 +33,16 @@ import {
 
 const DIVIDEND_COLOR = seriesColor(0);
 const JCP_COLOR = seriesColor(1);
+const DISTRIBUTION_COLOR = seriesColor(2);
 
 const DIVIDEND_KEY = "dividends";
 const JCP_KEY = "interestOnEquity";
+const DISTRIBUTION_KEY = "distributions";
 
 const SERIES: readonly LegendSeries[] = [
   { key: DIVIDEND_KEY, label: "Dividendos", color: DIVIDEND_COLOR },
   { key: JCP_KEY, label: "JCP", color: JCP_COLOR },
+  { key: DISTRIBUTION_KEY, label: "Rendimentos", color: DISTRIBUTION_COLOR },
 ];
 
 const SERIES_KEYS = SERIES.map((item) => item.key);
@@ -186,6 +189,22 @@ export function EarningsChart({
             animationDuration={ANIMATION_DURATION}
           />
 
+          <Bar
+            dataKey={DISTRIBUTION_KEY}
+            name="Rendimentos"
+            stackId="earnings"
+            hide={legend.isHidden(DISTRIBUTION_KEY)}
+            fill={DISTRIBUTION_COLOR}
+            fillOpacity={legend.opacityOf(DISTRIBUTION_KEY)}
+            stroke={SURFACE}
+            strokeWidth={GAP}
+            maxBarSize={MAX_BAR_SIZE}
+            radius={CAP_RADIUS}
+            shape={shapeOf(DISTRIBUTION_KEY, DISTRIBUTION_COLOR)}
+            activeBar={{ fillOpacity: 1 }}
+            animationDuration={ANIMATION_DURATION}
+          />
+
           {zoomable ? (
             <Brush
               dataKey="reference"
@@ -243,6 +262,16 @@ function EarningsTooltip({
             label: "JCP",
             value: formatCurrency(point.interestOnEquity),
             color: JCP_COLOR,
+          },
+        ]
+      : []),
+    ...(visible(DISTRIBUTION_KEY)
+      ? [
+          {
+            key: DISTRIBUTION_KEY,
+            label: "Rendimentos",
+            value: formatCurrency(point.distributions),
+            color: DISTRIBUTION_COLOR,
           },
         ]
       : []),
