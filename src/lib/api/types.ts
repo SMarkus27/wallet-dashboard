@@ -151,10 +151,11 @@ export type MonthlyEarning = {
   month: number;
   dividends: ApiDecimal;
   interest_on_equity: ApiDecimal;
+  distributions: ApiDecimal;
   total: ApiDecimal;
 };
 
-export type EarningKind = "DIVIDEND" | "JCP";
+export type EarningKind = "DIVIDEND" | "JCP" | "DISTRIBUTION";
 
 export type EarningAsset = {
   ticker: string;
@@ -164,6 +165,7 @@ export type EarningAsset = {
   sector_label: string | null;
   dividends: ApiDecimal;
   interest_on_equity: ApiDecimal;
+  distributions: ApiDecimal;
   total: ApiDecimal;
 };
 
