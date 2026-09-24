@@ -29,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { FilterRow } from "@/components/filters/filter-row";
 import { TargetsDonut } from "@/components/wallets/targets-donut";
 import { ApiError, api } from "@/lib/api/client";
 import { ASSET_TYPES, SECTORS, assetTypeLabel } from "@/lib/api/types";
@@ -38,6 +39,7 @@ import type {
   WalletAssetClassTarget,
   WalletSectorTarget,
 } from "@/lib/api/types";
+import { ALL_TYPES, CLASS_MEASURE, WALLET_MEASURE } from "@/lib/portfolio/shares";
 import { WALLET_MESSAGES, walletMessage } from "@/lib/wallets/messages";
 
 const FULL_ALLOCATION = 100;
@@ -67,6 +69,7 @@ export function SectorTargets({
     })),
   );
   const [editing, setEditing] = useState(false);
+  const [scope, setScope] = useState<string>(ALL_TYPES);
   const [assetType, setAssetType] = useState<AssetType | null>(null);
   const [sector, setSector] = useState<SectorName | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -172,25 +175,55 @@ export function SectorTargets({
   }
 
   if (!editing) {
-    const shares = sectors.map((target) => ({
+    const whole = scope === ALL_TYPES;
+    const visible = whole
+      ? sectors
+      : sectors.filter((target) => target.asset_type === scope);
+
+    const shares = visible.map((target) => ({
       key: `${target.asset_type}|${target.sector}`,
       label: target.sector,
-      caption: assetTypeLabel(target.asset_type),
-      percentage: walletShare(target, assetClasses),
+      caption: whole ? assetTypeLabel(target.asset_type) : null,
+      percentage: whole
+        ? walletShare(target, assetClasses)
+        : target.percentage,
     }));
 
     return (
       <div className="flex flex-col gap-4">
+        <FilterRow
+          fields={[
+            {
+              id: "setores-recorte",
+              label: "Tipo de ativo",
+              value: scope,
+              onChange: setScope,
+              options: [
+                { value: ALL_TYPES, label: "Todas as classes" },
+                ...allowed.map((type) => ({
+                  value: type.value,
+                  label: type.label,
+                })),
+              ],
+            },
+          ]}
+        />
+
         <TargetsDonut
           data={shares}
           total={shares.reduce((sum, share) => sum + share.percentage, 0)}
-          totalLabel="Da carteira"
-          emptyMessage="Nenhum setor distribuído ainda."
+          totalLabel={whole ? "Da carteira" : "Da classe"}
+          emptyMessage={
+            whole
+              ? "Nenhum setor distribuído ainda."
+              : "Nenhum setor nesta classe ainda."
+          }
         />
 
         <p className="text-xs text-muted-foreground">
-          As fatias mostram quanto cada setor representa da carteira inteira: a
-          meta dentro da classe, multiplicada pela meta da classe.
+          {whole
+            ? `${WALLET_MEASURE}: a meta do setor dentro da classe, multiplicada pela meta da classe.`
+            : `${CLASS_MEASURE}: a meta que você digitou, que soma 100% dentro desta classe.`}
         </p>
 
         <div className="flex justify-end border-t pt-4">
