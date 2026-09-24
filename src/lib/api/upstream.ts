@@ -25,6 +25,17 @@ export class UpstreamError extends Error {
   }
 }
 
+const METHOD_PRESERVING_REDIRECTS = new Set([307, 308]);
+
+function sameOriginRedirect(from: string, location: string | null) {
+  if (!location) return null;
+
+  const origin = new URL(from).origin;
+  const target = new URL(location, from);
+
+  return target.origin === origin ? target.toString() : null;
+}
+
 export function buildUpstreamUrl(path: string, search = "") {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   return `${walletApiUrl()}${walletApiPrefix()}${normalized}${search}`;
@@ -58,13 +69,22 @@ export async function upstreamFetch({
   if (cookie) headers.set("cookie", cookie);
   if (contentType) headers.set("content-type", contentType);
 
-  return fetch(buildUpstreamUrl(path, search), {
+  const url = buildUpstreamUrl(path, search);
+  const options: RequestInit = {
     method,
     headers,
     body,
     cache: "no-store",
     redirect: "manual",
-  });
+  };
+
+  const response = await fetch(url, options);
+
+  if (!METHOD_PRESERVING_REDIRECTS.has(response.status)) return response;
+
+  const target = sameOriginRedirect(url, response.headers.get("location"));
+
+  return target ? fetch(target, options) : response;
 }
 
 export function extractTokensFromSetCookie(response: Response): SessionTokens {
