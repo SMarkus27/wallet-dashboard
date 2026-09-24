@@ -16,3 +16,6 @@ tsconfig.tsbuildinfo
 
 # Não faz parte do build
 .github
+tests
+vitest.config.mts
+vitest.setup.ts
