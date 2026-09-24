@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { ShareDonut } from "@/components/charts/share-donut";
+import { AddTransactionDialog } from "@/components/transactions/add-transaction-dialog";
 import { EquityChart } from "@/components/charts/equity-chart";
 import { AssetTypeTable } from "@/components/summary/asset-type-table";
 import { SummaryStats } from "@/components/summary/summary-stats";
@@ -27,6 +28,11 @@ export default async function ResumoPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-lg font-semibold tracking-tight">Resumo</h1>
+        <AddTransactionDialog />
+      </div>
+
       <SummaryStats overview={overview} />
 
       <Card>

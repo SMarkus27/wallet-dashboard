@@ -291,6 +291,26 @@ export type WalletSummary = {
 
 export type WalletList = { wallet: WalletSummary[] };
 
+export type CatalogAsset = {
+  external_id: string;
+  ticker: string;
+  name: string | null;
+  type: AssetType;
+  sector: string | null;
+};
+
+export type CatalogAssetPage = {
+  items: CatalogAsset[];
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+};
+
+export const TRADED_TYPES = ["BUY", "SELL"] as const;
+
+export type TradedType = (typeof TRADED_TYPES)[number];
+
 export type SigninMfaChallenge = { mfa_signin_token: string };
 
 export type AuthTokens = { access_token: string; refresh_token: string };
