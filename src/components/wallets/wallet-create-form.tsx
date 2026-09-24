@@ -30,7 +30,7 @@ export function WalletCreateForm() {
     setError(null);
 
     try {
-      await api.post("/investor/wallets/", { name: name.trim() });
+      await api.post("/investor/wallets", { name: name.trim() });
       setName("");
       router.refresh();
     } catch (cause) {
