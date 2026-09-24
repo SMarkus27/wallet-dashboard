@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { LoaderCircleIcon, PlusIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react";
+import {
+  LoaderCircleIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+  TriangleAlertIcon,
+} from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -23,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TargetsDonut } from "@/components/wallets/targets-donut";
 import { ApiError, api } from "@/lib/api/client";
 import { ASSET_TYPES, SECTORS, assetTypeLabel } from "@/lib/api/types";
 import type {
@@ -59,6 +66,7 @@ export function SectorTargets({
       percentage: target.percentage,
     })),
   );
+  const [editing, setEditing] = useState(false);
   const [assetType, setAssetType] = useState<AssetType | null>(null);
   const [sector, setSector] = useState<SectorName | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -139,12 +147,60 @@ export function SectorTargets({
           percentage: row.percentage,
         })),
       });
+      setEditing(false);
       router.refresh();
     } catch (cause) {
       setError(messageFor(cause));
     } finally {
       setPending(false);
     }
+  }
+
+  function closeEditor() {
+    setRows(
+      sectors.map((target) => ({
+        external_id: target.external_id,
+        asset_type: target.asset_type,
+        sector: target.sector as SectorName,
+        percentage: target.percentage,
+      })),
+    );
+    setAssetType(null);
+    setSector(null);
+    setError(null);
+    setEditing(false);
+  }
+
+  if (!editing) {
+    const shares = sectors.map((target) => ({
+      key: `${target.asset_type}|${target.sector}`,
+      label: target.sector,
+      caption: assetTypeLabel(target.asset_type),
+      percentage: walletShare(target, assetClasses),
+    }));
+
+    return (
+      <div className="flex flex-col gap-4">
+        <TargetsDonut
+          data={shares}
+          total={shares.reduce((sum, share) => sum + share.percentage, 0)}
+          totalLabel="Da carteira"
+          emptyMessage="Nenhum setor distribuído ainda."
+        />
+
+        <p className="text-xs text-muted-foreground">
+          As fatias mostram quanto cada setor representa da carteira inteira: a
+          meta dentro da classe, multiplicada pela meta da classe.
+        </p>
+
+        <div className="flex justify-end border-t pt-4">
+          <Button type="button" variant="outline" onClick={() => setEditing(true)}>
+            <PencilIcon />
+            Editar setores
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const overflowing = allowed.filter(
@@ -282,7 +338,11 @@ export function SectorTargets({
           })}
         </div>
 
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end gap-2">
+          <Button type="button" variant="ghost" disabled={pending} onClick={closeEditor}>
+            Cancelar
+          </Button>
+
           <Button
             type="button"
             disabled={pending || rows.length === 0 || overflowing.length > 0}
@@ -295,6 +355,15 @@ export function SectorTargets({
       </div>
     </div>
   );
+}
+
+function walletShare(
+  target: WalletSectorTarget,
+  assetClasses: WalletAssetClassTarget[],
+) {
+  const owner = assetClasses.find((item) => item.name === target.asset_type);
+
+  return owner ? (target.percentage * owner.percentage) / FULL_ALLOCATION : 0;
 }
 
 function totalFor(rows: Row[], assetType: AssetType) {

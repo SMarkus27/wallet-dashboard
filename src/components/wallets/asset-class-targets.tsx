@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { LoaderCircleIcon, PlusIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react";
+import {
+  LoaderCircleIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+  TriangleAlertIcon,
+} from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -23,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TargetsDonut } from "@/components/wallets/targets-donut";
 import { ApiError, api } from "@/lib/api/client";
 import { ASSET_TYPES, assetTypeLabel } from "@/lib/api/types";
 import type { AssetType, WalletAssetClassTarget } from "@/lib/api/types";
@@ -46,6 +53,7 @@ export function AssetClassTargets({
       percentage: target.percentage,
     })),
   );
+  const [editing, setEditing] = useState(false);
   const [chosen, setChosen] = useState<AssetType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -109,12 +117,50 @@ export function AssetClassTargets({
           percentage: row.percentage,
         })),
       });
+      setEditing(false);
       router.refresh();
     } catch (cause) {
       setError(messageFor(cause));
     } finally {
       setPending(false);
     }
+  }
+
+  function closeEditor() {
+    setRows(
+      targets.map((target) => ({
+        external_id: target.external_id,
+        name: target.name,
+        percentage: target.percentage,
+      })),
+    );
+    setChosen(null);
+    setError(null);
+    setEditing(false);
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex flex-col gap-4">
+        <TargetsDonut
+          data={targets.map((target) => ({
+            key: target.external_id,
+            label: assetTypeLabel(target.name),
+            percentage: target.percentage,
+          }))}
+          total={targets.reduce((sum, target) => sum + target.percentage, 0)}
+          totalLabel="Total alocado"
+          emptyMessage="Nenhuma classe definida ainda."
+        />
+
+        <div className="flex justify-end border-t pt-4">
+          <Button type="button" variant="outline" onClick={() => setEditing(true)}>
+            <PencilIcon />
+            Editar metas
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -220,14 +266,20 @@ export function AssetClassTargets({
           Total alocado: {total.toLocaleString("pt-BR")}% de {FULL_ALLOCATION}%
         </p>
 
-        <Button
-          type="button"
-          disabled={pending || rows.length === 0 || total > FULL_ALLOCATION}
-          onClick={save}
-        >
-          {pending ? <LoaderCircleIcon className="animate-spin" /> : null}
-          Salvar metas
-        </Button>
+        <div className="flex gap-2">
+          <Button type="button" variant="ghost" disabled={pending} onClick={closeEditor}>
+            Cancelar
+          </Button>
+
+          <Button
+            type="button"
+            disabled={pending || rows.length === 0 || total > FULL_ALLOCATION}
+            onClick={save}
+          >
+            {pending ? <LoaderCircleIcon className="animate-spin" /> : null}
+            Salvar metas
+          </Button>
+        </div>
       </div>
     </div>
   );

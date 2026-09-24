@@ -10,13 +10,20 @@ import {
 import { AssetClassTargets } from "@/components/wallets/asset-class-targets";
 import { SectorTargets } from "@/components/wallets/sector-targets";
 import { WalletCreateForm } from "@/components/wallets/wallet-create-form";
+import { Badge } from "@/components/ui/badge";
 import { getWallets } from "@/lib/api/wallets";
+import { readActiveWalletId } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Carteiras" };
 
 export default async function CarteirasPage() {
-  const { wallet: wallets } = await getWallets();
-  const active = wallets[0];
+  const [{ wallet: wallets }, activeId] = await Promise.all([
+    getWallets(),
+    readActiveWalletId(),
+  ]);
+
+  const active =
+    wallets.find((item) => item.external_id === activeId) ?? wallets[0];
 
   return (
     <div className="flex flex-col gap-6">
@@ -35,7 +42,12 @@ export default async function CarteirasPage() {
                   key={item.external_id}
                   className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
                 >
-                  <span className="font-medium">{item.name || "Sem nome"}</span>
+                  <span className="flex items-center gap-2 font-medium">
+                    {item.name || "Sem nome"}
+                    {item.external_id === active?.external_id ? (
+                      <Badge variant="outline">Em uso</Badge>
+                    ) : null}
+                  </span>
                   <span className="text-muted-foreground">
                     {item.asset_class.length} classes · {item.sectors.length} setores
                   </span>
@@ -56,8 +68,11 @@ export default async function CarteirasPage() {
         <CardHeader>
           <CardTitle>Metas por classe de ativo</CardTitle>
           <CardDescription>
-            Quanto da carteira cada classe deve ocupar. A soma não pode passar de
-            100%.
+            Quanto da carteira cada classe deve ocupar, em{" "}
+            <strong className="font-medium text-foreground">
+              {active?.name || "sua carteira"}
+            </strong>
+            . A soma não pode passar de 100%.
           </CardDescription>
         </CardHeader>
         <CardContent>
