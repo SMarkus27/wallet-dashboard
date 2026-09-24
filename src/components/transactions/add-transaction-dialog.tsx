@@ -99,7 +99,7 @@ export function AddTransactionDialog() {
     setError(null);
 
     try {
-      await api.post("/investor/transactions/", {
+      await api.post("/investor/transactions", {
         asset_external_id: asset.external_id,
         type: operation,
         quantity: Number(quantity),
