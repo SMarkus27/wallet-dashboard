@@ -62,18 +62,12 @@ export type MonthGroup = {
   rows: EarningRow[];
 };
 
+// O gráfico responde "quanto entrou por mês". Separar dividendo, JCP e
+// rendimento em três barras respondia outra pergunta, que a tabela abaixo
+// já responde linha a linha.
 export type SeriesPoint = {
   reference: string;
-  dividends: number;
-  interestOnEquity: number;
-  distributions: number;
   total: number;
-};
-
-const SERIES_FIELD: Record<EarningKind, keyof Omit<SeriesPoint, "reference">> = {
-  DIVIDEND: "dividends",
-  JCP: "interestOnEquity",
-  DISTRIBUTION: "distributions",
 };
 
 export function toRows(
@@ -122,15 +116,8 @@ export function toSeries(
 
   for (const row of rows) {
     const key = granularity === "YEAR" ? row.reference.slice(0, 4) : row.reference;
-    const point = buckets.get(key) ?? {
-      reference: key,
-      dividends: 0,
-      interestOnEquity: 0,
-      distributions: 0,
-      total: 0,
-    };
+    const point = buckets.get(key) ?? { reference: key, total: 0 };
 
-    point[SERIES_FIELD[row.kind]] += row.amount;
     point.total += row.amount;
     buckets.set(key, point);
   }
