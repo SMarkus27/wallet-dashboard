@@ -224,6 +224,56 @@ export type PortfolioScheduledEarnings = {
   payments: ScheduledEarning[];
 };
 
+export type RebalanceGroup = {
+  name: string;
+  label: string;
+  asset_type: string;
+  target_percentage: ApiDecimal;
+  current_value: ApiDecimal;
+  current_percentage: ApiDecimal;
+  amount: ApiDecimal;
+  projected_value: ApiDecimal;
+  projected_percentage: ApiDecimal;
+};
+
+export type RebalanceAsset = {
+  external_id_str: string;
+  ticker: string;
+  name: string | null;
+  asset_type: string;
+  sector: string | null;
+  price: ApiDecimal;
+  quantity: number;
+  amount: ApiDecimal;
+  current_value: ApiDecimal;
+  projected_value: ApiDecimal;
+  projected_percentage: ApiDecimal;
+};
+
+export type RebalanceDimension = "ASSET_TYPE" | "SECTOR";
+
+export type MissingTarget = {
+  dimension: RebalanceDimension;
+  name: string;
+  label: string;
+  asset_type: string;
+  target_percentage: ApiDecimal;
+};
+
+export type PortfolioRebalance = {
+  reference: string;
+  amount: ApiDecimal;
+  asset_type: AssetType | null;
+  total_equity: ApiDecimal;
+  projected_equity: ApiDecimal;
+  allocated_amount: ApiDecimal;
+  leftover_amount: ApiDecimal;
+  asset_types: RebalanceGroup[];
+  sectors: RebalanceGroup[];
+  assets: RebalanceAsset[];
+  missing_targets: MissingTarget[];
+};
+
 export type TaxPeriod = {
   external_id_str: string;
   asset_type: AssetType;
