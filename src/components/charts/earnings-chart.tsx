@@ -13,7 +13,6 @@ import {
 } from "recharts";
 import type { BarShapeProps } from "recharts";
 
-import { ChartLegend, type LegendSeries } from "@/components/charts/chart-legend";
 import { ChartTooltip, type TooltipRow } from "@/components/charts/chart-tooltip";
 import {
   AXIS_LINE,
@@ -22,7 +21,6 @@ import {
   SURFACE,
   seriesColor,
 } from "@/components/charts/chart-tokens";
-import { useChartLegend } from "@/components/charts/use-chart-legend";
 import type { Granularity, SeriesPoint } from "@/lib/portfolio/earnings";
 import {
   formatCompactCurrency,
@@ -31,21 +29,9 @@ import {
   formatMonthReference,
 } from "@/lib/format";
 
-const DIVIDEND_COLOR = seriesColor(0);
-const JCP_COLOR = seriesColor(1);
-const DISTRIBUTION_COLOR = seriesColor(2);
+const EARNINGS_COLOR = seriesColor(0);
 
-const DIVIDEND_KEY = "dividends";
-const JCP_KEY = "interestOnEquity";
-const DISTRIBUTION_KEY = "distributions";
-
-const SERIES: readonly LegendSeries[] = [
-  { key: DIVIDEND_KEY, label: "Dividendos", color: DIVIDEND_COLOR },
-  { key: JCP_KEY, label: "JCP", color: JCP_COLOR },
-  { key: DISTRIBUTION_KEY, label: "Rendimentos", color: DISTRIBUTION_COLOR },
-];
-
-const SERIES_KEYS = SERIES.map((item) => item.key);
+const EARNINGS_KEY = "total";
 
 const MIN_TICK_GAP = 24;
 const MAX_BAR_SIZE = 24;
@@ -73,8 +59,6 @@ export function EarningsChart({
   selected?: string | null;
   onSelect?: (reference: string | null) => void;
 }) {
-  const legend = useChartLegend(SERIES_KEYS);
-
   const label = (reference: string) =>
     granularity === "YEAR" ? reference : formatMonthReference(reference);
 
@@ -83,30 +67,26 @@ export function EarningsChart({
 
   const zoomable = points.length >= BRUSH_MIN_POINTS;
 
-  const shapeOf = (key: string, color: string) =>
-    function BucketShape(props: BarShapeProps) {
-      const reference = (props.payload as SeriesPoint | undefined)?.reference;
-      const dimmed = selected !== null && selected !== reference;
+  function BucketShape(props: BarShapeProps) {
+    const reference = (props.payload as SeriesPoint | undefined)?.reference;
+    const dimmed = selected !== null && selected !== reference;
 
-      return (
-        <Rectangle
-          {...props}
-          fill={color}
-          fillOpacity={legend.opacityOf(key) * (dimmed ? DIMMED_OPACITY : 1)}
-        />
-      );
-    };
+    return (
+      <Rectangle
+        {...props}
+        fill={EARNINGS_COLOR}
+        fillOpacity={dimmed ? DIMMED_OPACITY : 1}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <ChartLegend series={SERIES} state={legend} />
-        {onSelect ? (
-          <p className="px-2 text-xs text-subtle-foreground">
-            Clique em uma barra para filtrar o histórico abaixo
-          </p>
-        ) : null}
-      </div>
+      {onSelect ? (
+        <p className="px-2 text-xs text-subtle-foreground">
+          Clique em uma barra para filtrar o histórico abaixo
+        </p>
+      ) : null}
 
       <ResponsiveContainer
         width="100%"
@@ -150,7 +130,6 @@ export function EarningsChart({
             content={
               <EarningsTooltip
                 title={longLabel}
-                hidden={legend.hidden}
                 selected={selected}
                 selectable={Boolean(onSelect)}
               />
@@ -158,49 +137,14 @@ export function EarningsChart({
           />
 
           <Bar
-            dataKey={DIVIDEND_KEY}
-            name="Dividendos"
-            stackId="earnings"
-            hide={legend.isHidden(DIVIDEND_KEY)}
-            fill={DIVIDEND_COLOR}
-            fillOpacity={legend.opacityOf(DIVIDEND_KEY)}
+            dataKey={EARNINGS_KEY}
+            name="Proventos"
+            fill={EARNINGS_COLOR}
             stroke={SURFACE}
             strokeWidth={GAP}
             maxBarSize={MAX_BAR_SIZE}
             radius={CAP_RADIUS}
-            shape={shapeOf(DIVIDEND_KEY, DIVIDEND_COLOR)}
-            activeBar={{ fillOpacity: 1 }}
-            animationDuration={ANIMATION_DURATION}
-          />
-
-          <Bar
-            dataKey={JCP_KEY}
-            name="JCP"
-            stackId="earnings"
-            hide={legend.isHidden(JCP_KEY)}
-            fill={JCP_COLOR}
-            fillOpacity={legend.opacityOf(JCP_KEY)}
-            stroke={SURFACE}
-            strokeWidth={GAP}
-            maxBarSize={MAX_BAR_SIZE}
-            radius={CAP_RADIUS}
-            shape={shapeOf(JCP_KEY, JCP_COLOR)}
-            activeBar={{ fillOpacity: 1 }}
-            animationDuration={ANIMATION_DURATION}
-          />
-
-          <Bar
-            dataKey={DISTRIBUTION_KEY}
-            name="Rendimentos"
-            stackId="earnings"
-            hide={legend.isHidden(DISTRIBUTION_KEY)}
-            fill={DISTRIBUTION_COLOR}
-            fillOpacity={legend.opacityOf(DISTRIBUTION_KEY)}
-            stroke={SURFACE}
-            strokeWidth={GAP}
-            maxBarSize={MAX_BAR_SIZE}
-            radius={CAP_RADIUS}
-            shape={shapeOf(DISTRIBUTION_KEY, DISTRIBUTION_COLOR)}
+            shape={BucketShape}
             activeBar={{ fillOpacity: 1 }}
             animationDuration={ANIMATION_DURATION}
           />
@@ -227,14 +171,12 @@ function EarningsTooltip({
   active,
   payload,
   title,
-  hidden,
   selected,
   selectable,
 }: {
   active?: boolean;
   payload?: { payload: SeriesPoint }[];
   title: (reference: string) => string;
-  hidden?: ReadonlySet<string>;
   selected?: string | null;
   selectable?: boolean;
 }) {
@@ -242,39 +184,13 @@ function EarningsTooltip({
 
   if (!active || !point) return null;
 
-  const visible = (key: string) => !hidden?.has(key);
-
   const rows: TooltipRow[] = [
-    ...(visible(DIVIDEND_KEY)
-      ? [
-          {
-            key: DIVIDEND_KEY,
-            label: "Dividendos",
-            value: formatCurrency(point.dividends),
-            color: DIVIDEND_COLOR,
-          },
-        ]
-      : []),
-    ...(visible(JCP_KEY)
-      ? [
-          {
-            key: JCP_KEY,
-            label: "JCP",
-            value: formatCurrency(point.interestOnEquity),
-            color: JCP_COLOR,
-          },
-        ]
-      : []),
-    ...(visible(DISTRIBUTION_KEY)
-      ? [
-          {
-            key: DISTRIBUTION_KEY,
-            label: "Rendimentos",
-            value: formatCurrency(point.distributions),
-            color: DISTRIBUTION_COLOR,
-          },
-        ]
-      : []),
+    {
+      key: EARNINGS_KEY,
+      label: "Proventos",
+      value: formatCurrency(point.total),
+      color: EARNINGS_COLOR,
+    },
   ];
 
   return (
@@ -283,12 +199,6 @@ function EarningsTooltip({
       rows={rows}
       footer={
         <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Total</span>
-            <span className="font-medium tabular-nums">
-              {formatCurrency(point.total)}
-            </span>
-          </div>
           {selectable ? (
             <span className="text-subtle-foreground">
               {selected === point.reference

@@ -8,6 +8,7 @@ import type {
   PortfolioEquity,
   PortfolioEquityHistory,
   PortfolioOverview,
+  PortfolioPendingEarnings,
   PortfolioPeriod,
   PortfolioScheduledEarnings,
 } from "@/lib/api/types";
@@ -36,6 +37,12 @@ export function getEquityHistory(options: {
 
 export function getEarnings(period?: PortfolioPeriod) {
   return apiGet<PortfolioEarnings>("/investor/portfolio/earnings", { period });
+}
+
+export function getPendingEarnings() {
+  return apiGet<PortfolioPendingEarnings>(
+    "/investor/portfolio/earnings/pending",
+  );
 }
 
 export function getScheduledEarnings() {
