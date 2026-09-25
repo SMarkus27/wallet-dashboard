@@ -2,11 +2,10 @@
 
 import { useMemo } from "react";
 import {
-  Area,
+  Bar,
+  BarChart,
   Brush,
   CartesianGrid,
-  ComposedChart,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -24,30 +23,44 @@ import {
 } from "@/components/charts/chart-tokens";
 import { useChartLegend } from "@/components/charts/use-chart-legend";
 import type { EquityPoint } from "@/lib/api/types";
+import type { EquityBar } from "@/lib/portfolio/equity";
+import { hasLoss, toEquityBars } from "@/lib/portfolio/equity";
 import {
   formatCompactCurrency,
   formatCurrency,
   formatMonthLong,
   formatMonthReference,
-  toNumber,
 } from "@/lib/format";
 
 const INVESTED_COLOR = seriesColor(0);
-const EQUITY_COLOR = seriesColor(1);
+const GAIN_COLOR = seriesColor(11);
+const LOSS_COLOR = "var(--color-negative)";
 
-const EQUITY_KEY = "equity";
-const INVESTED_KEY = "invested";
+const BASE_KEY = "base";
+const GAIN_KEY = "surplus";
+const LOSS_KEY = "shortfall";
 
-const SERIES: readonly LegendSeries[] = [
-  { key: EQUITY_KEY, label: "Patrimônio", color: EQUITY_COLOR, shape: "line" },
-  { key: INVESTED_KEY, label: "Valor aplicado", color: INVESTED_COLOR },
-];
+const STACK = "equity";
 
-const SERIES_KEYS = SERIES.map((item) => item.key);
+const GAIN_SERIES: LegendSeries = {
+  key: GAIN_KEY,
+  label: "Ganho de capital",
+  color: GAIN_COLOR,
+};
+
+const LOSS_SERIES: LegendSeries = {
+  key: LOSS_KEY,
+  label: "Perda de capital",
+  color: LOSS_COLOR,
+};
+
+const INVESTED_SERIES: LegendSeries = {
+  key: BASE_KEY,
+  label: "Valor aplicado",
+  color: INVESTED_COLOR,
+};
 
 const MIN_TICK_GAP = 36;
-
-const MIN_POINTS = 2;
 
 const BRUSH_MIN_POINTS = 8;
 
@@ -57,49 +70,27 @@ const BRUSH_HEIGHT = 30;
 
 const ANIMATION_DURATION = 600;
 
-const AREA_FILL_OPACITY = 0.14;
+const MAX_BAR_SIZE = 28;
 
-const ACTIVE_DOT_RADIUS = 4;
-
-type Point = {
-  reference: string;
-  invested: number;
-  equity: number;
-  gain: number;
-  earnings: number;
-};
+const BAR_GAP = 2;
 
 export function EquityChart({ months }: { months: EquityPoint[] }) {
-  const legend = useChartLegend(SERIES_KEYS);
+  const data = useMemo(() => toEquityBars(months), [months]);
 
-  const data = useMemo<Point[]>(
-    () =>
-      months.map((month) => ({
-        reference: month.reference,
-        invested: toNumber(month.invested_amount),
-        equity: toNumber(month.total_equity),
-        gain: toNumber(month.capital_gain),
-        earnings: toNumber(month.earnings),
-      })),
-    [months],
-  );
+  const series = [
+    INVESTED_SERIES,
+    GAIN_SERIES,
+    ...(hasLoss(data) ? [LOSS_SERIES] : []),
+  ];
 
-  // Um mês só não é evolução: dois pontos soltos num gráfico de 280px não
-  // dizem nada além do que os números ao lado já dizem.
-  if (data.length < MIN_POINTS) {
-    return (
-      <p className="py-10 text-center text-sm text-muted-foreground">
-        A evolução aparece a partir do segundo mês de histórico.
-      </p>
-    );
-  }
+  const legend = useChartLegend(series.map((item) => item.key));
 
   const zoomable = data.length >= BRUSH_MIN_POINTS;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <ChartLegend series={SERIES} state={legend} />
+        <ChartLegend series={series} state={legend} />
         <p className="px-2 text-xs text-subtle-foreground">
           {zoomable
             ? "Clique na legenda para isolar uma série · arraste a faixa abaixo para recortar o período"
@@ -111,7 +102,7 @@ export function EquityChart({ months }: { months: EquityPoint[] }) {
         width="100%"
         height={zoomable ? PLOT_HEIGHT + BRUSH_HEIGHT : PLOT_HEIGHT}
       >
-        <ComposedChart
+        <BarChart
           data={data}
           margin={{ top: 4, right: 8, bottom: 0, left: 8 }}
         >
@@ -136,42 +127,46 @@ export function EquityChart({ months }: { months: EquityPoint[] }) {
           />
 
           <Tooltip
-            cursor={{ stroke: "var(--color-axis)", strokeWidth: 1 }}
+            cursor={{ fill: "var(--color-accent)", opacity: 0.5 }}
             content={<EquityTooltip hidden={legend.hidden} />}
           />
 
-          <Area
-            type="monotone"
-            dataKey={INVESTED_KEY}
+          <Bar
+            dataKey={BASE_KEY}
             name="Valor aplicado"
-            hide={legend.isHidden(INVESTED_KEY)}
-            stroke={INVESTED_COLOR}
-            strokeWidth={2}
-            strokeOpacity={legend.opacityOf(INVESTED_KEY)}
+            stackId={STACK}
+            hide={legend.isHidden(BASE_KEY)}
             fill={INVESTED_COLOR}
-            fillOpacity={AREA_FILL_OPACITY * legend.opacityOf(INVESTED_KEY)}
-            activeDot={{
-              r: ACTIVE_DOT_RADIUS,
-              strokeWidth: 2,
-              stroke: SURFACE,
-            }}
+            fillOpacity={legend.opacityOf(BASE_KEY)}
+            stroke={SURFACE}
+            strokeWidth={BAR_GAP}
+            maxBarSize={MAX_BAR_SIZE}
             animationDuration={ANIMATION_DURATION}
           />
 
-          <Line
-            type="monotone"
-            dataKey={EQUITY_KEY}
-            name="Patrimônio"
-            hide={legend.isHidden(EQUITY_KEY)}
-            stroke={EQUITY_COLOR}
-            strokeWidth={2}
-            strokeOpacity={legend.opacityOf(EQUITY_KEY)}
-            dot={false}
-            activeDot={{
-              r: ACTIVE_DOT_RADIUS,
-              strokeWidth: 2,
-              stroke: SURFACE,
-            }}
+          <Bar
+            dataKey={GAIN_KEY}
+            name="Ganho de capital"
+            stackId={STACK}
+            hide={legend.isHidden(GAIN_KEY)}
+            fill={GAIN_COLOR}
+            fillOpacity={legend.opacityOf(GAIN_KEY)}
+            stroke={SURFACE}
+            strokeWidth={BAR_GAP}
+            maxBarSize={MAX_BAR_SIZE}
+            animationDuration={ANIMATION_DURATION}
+          />
+
+          <Bar
+            dataKey={LOSS_KEY}
+            name="Perda de capital"
+            stackId={STACK}
+            hide={legend.isHidden(LOSS_KEY)}
+            fill={LOSS_COLOR}
+            fillOpacity={legend.opacityOf(LOSS_KEY)}
+            stroke={SURFACE}
+            strokeWidth={BAR_GAP}
+            maxBarSize={MAX_BAR_SIZE}
             animationDuration={ANIMATION_DURATION}
           />
 
@@ -187,7 +182,7 @@ export function EquityChart({ months }: { months: EquityPoint[] }) {
               ariaLabel="Recorte do período exibido"
             />
           ) : null}
-        </ComposedChart>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
@@ -199,7 +194,7 @@ function EquityTooltip({
   hidden,
 }: {
   active?: boolean;
-  payload?: { payload: Point }[];
+  payload?: { payload: EquityBar }[];
   hidden?: ReadonlySet<string>;
 }) {
   const point = payload?.[0]?.payload;
@@ -209,32 +204,41 @@ function EquityTooltip({
   const visible = (key: string) => !hidden?.has(key);
 
   const rows: TooltipRow[] = [
-    ...(visible(EQUITY_KEY)
+    {
+      key: "equity",
+      label: "Patrimônio",
+      value: formatCurrency(point.equity),
+    },
+    ...(visible(GAIN_KEY) && point.surplus > 0
       ? [
           {
-            key: EQUITY_KEY,
-            label: "Patrimônio",
-            value: formatCurrency(point.equity),
-            color: EQUITY_COLOR,
+            key: GAIN_KEY,
+            label: "Ganho de capital",
+            value: formatCurrency(point.surplus),
+            color: GAIN_COLOR,
           },
         ]
       : []),
-    ...(visible(INVESTED_KEY)
+    ...(visible(LOSS_KEY) && point.shortfall > 0
       ? [
           {
-            key: INVESTED_KEY,
+            key: LOSS_KEY,
+            label: "Perda de capital",
+            value: formatCurrency(point.shortfall),
+            color: LOSS_COLOR,
+          },
+        ]
+      : []),
+    ...(visible(BASE_KEY)
+      ? [
+          {
+            key: BASE_KEY,
             label: "Valor aplicado",
             value: formatCurrency(point.invested),
             color: INVESTED_COLOR,
           },
         ]
       : []),
-    {
-      key: "gain",
-      label: "Ganho de capital",
-      value: formatCurrency(point.gain),
-      muted: true,
-    },
     {
       key: "earnings",
       label: "Proventos acumulados",
