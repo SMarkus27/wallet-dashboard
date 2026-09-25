@@ -39,14 +39,15 @@ export default async function ResumoPage() {
         <CardHeader>
           <CardTitle>Evolução do patrimônio</CardTitle>
           <CardDescription>
-            A distância entre as duas linhas é o ganho de capital não realizado.
+            A altura da barra é o patrimônio do mês; o topo mais claro é o
+            ganho de capital ainda não realizado.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {history.months.length > 0 ? (
             <EquityChart months={history.months} />
           ) : (
-            <EmptyState message="Registre uma negociação para o histórico começar." />
+            <EmptyState message="O histórico começa no mês da sua primeira negociação." />
           )}
         </CardContent>
       </Card>
