@@ -224,6 +224,28 @@ export type PortfolioScheduledEarnings = {
   payments: ScheduledEarning[];
 };
 
+export type PendingEarning = {
+  external_id_str: string;
+  asset_external_id: string;
+  ticker: string;
+  name: string | null;
+  asset_type: AssetType;
+  sector: string | null;
+  sector_label: string | null;
+  type: EarningKind;
+  quantity: number;
+  price: ApiDecimal;
+  amount: ApiDecimal;
+  ex_date: string;
+  payment_date: string;
+};
+
+export type PortfolioPendingEarnings = {
+  reference: string;
+  total: ApiDecimal;
+  payments: PendingEarning[];
+};
+
 export type RebalanceGroup = {
   name: string;
   label: string;
