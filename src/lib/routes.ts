@@ -4,6 +4,7 @@ export const DASHBOARD_ROUTES = [
   { href: "/resumo", label: "Resumo" },
   { href: "/proventos", label: "Proventos" },
   { href: "/graficos", label: "Gráficos" },
+  { href: "/rebalance", label: "Rebalance" },
   { href: "/irpf", label: "IRPF" },
   { href: "/carteiras", label: "Carteiras" },
 ] as const satisfies readonly { href: Route; label: string }[];
